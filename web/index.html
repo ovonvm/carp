@@ -19,6 +19,28 @@
         if (theme) document.documentElement.dataset.theme = theme
       } catch (e) {}
     </script>
+    <script>
+      // Server-injected branding: apply title/favicon before first paint so the
+      // tab never flashes the built-in name.
+      (function () {
+        var b = /*__CARP_SITE_BOOT__*/null
+        if (!b) return
+        window.__SITE_BOOT__ = b
+        if (b.title) {
+          document.title = b.title
+          var og = document.querySelector('meta[property="og:title"]')
+          if (og) og.content = b.title
+          var name = document.querySelector('meta[property="og:site_name"]')
+          if (name && b.site_name) name.content = b.site_name
+        }
+        if (b.favicon) {
+          var icon = document.querySelector('link[rel="icon"]')
+          if (icon) icon.href = b.favicon
+          var touch = document.querySelector('link[rel="apple-touch-icon"]')
+          if (touch) touch.href = b.favicon
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

@@ -1,6 +1,9 @@
 package httpx
 
 import (
+	"bytes"
+	"encoding/json"
+	"html"
 	"io"
 	"io/fs"
 	"net/http"
@@ -212,12 +215,118 @@ func (s *Server) serveStatic(w http.ResponseWriter, r *http.Request, rel string)
 	return true
 }
 
+type siteBoot struct {
+	SiteName    string     `json:"site_name"`
+	LogoURL     string     `json:"logo_url"`
+	Title       string     `json:"title"`
+	Favicon     string     `json:"favicon"`
+	FooterText  string     `json:"footer_text"`
+	FooterLinks []siteLink `json:"footer_links"`
+}
+
+// spaRouteLabel mirrors the frontend route titles so the server can put the
+// final tab title into the HTML before the first paint.
+func spaRouteLabel(clean string) string {
+	switch {
+	case clean == "/" || clean == "/index.html" || strings.HasPrefix(clean, "/files"):
+		return "我的文件"
+	case strings.HasPrefix(clean, "/search"):
+		return "搜索"
+	case strings.HasPrefix(clean, "/groups"):
+		return "组空间"
+	case strings.HasPrefix(clean, "/trash"):
+		return "回收站"
+	case strings.HasPrefix(clean, "/downloads"):
+		return "下载中心"
+	case strings.HasPrefix(clean, "/transfers"):
+		return "离线下载"
+	case strings.HasPrefix(clean, "/shares"):
+		return "我的分享"
+	case strings.HasPrefix(clean, "/settings"):
+		return "设置"
+	case strings.HasPrefix(clean, "/admin/users"):
+		return "用户管理"
+	case strings.HasPrefix(clean, "/admin/audit"):
+		return "审计日志"
+	case strings.HasPrefix(clean, "/admin/settings"):
+		return "系统设置"
+	case strings.HasPrefix(clean, "/admin/storage"):
+		return "存储"
+	case strings.HasPrefix(clean, "/admin/groups"):
+		return "组管理"
+	case strings.HasPrefix(clean, "/s/"):
+		return "分享"
+	case strings.HasPrefix(clean, "/login"):
+		return "登录"
+	case strings.HasPrefix(clean, "/register"):
+		return "注册"
+	case strings.HasPrefix(clean, "/cancel-deletion"):
+		return "账号注销"
+	default:
+		return ""
+	}
+}
+
+func replaceFirstTag(data []byte, open, close, value string) []byte {
+	i := bytes.Index(data, []byte(open))
+	if i < 0 {
+		return data
+	}
+	j := bytes.Index(data[i:], []byte(close))
+	if j < 0 {
+		return data
+	}
+	j += i
+	out := make([]byte, 0, len(data)+len(value))
+	out = append(out, data[:i+len(open)]...)
+	out = append(out, []byte(html.EscapeString(value))...)
+	out = append(out, data[j:]...)
+	return out
+}
+
 func (s *Server) serveIndex(w http.ResponseWriter, r *http.Request, status int) {
 	data, err := fs.ReadFile(s.webFS, "index.html")
 	if err != nil {
 		s.writeError(w, r, apperr.ErrFrontendNotBuilt.WithCause(err))
 		return
 	}
+
+	// Inline the site branding so the first paint already has the right tab
+	// title, favicon and (later) hydrated sidebar name. The DB read is a few
+	// settings rows and the page is served with no-cache anyway.
+	clean := path.Clean("/" + r.URL.Path)
+	label := spaRouteLabel(clean)
+	if status == http.StatusNotFound {
+		label = "页面不存在"
+	}
+	siteName := "Carp"
+	logo := ""
+	var boot siteBoot
+	if b, berr := s.loadBranding(r); berr == nil {
+		if b.SiteName != "" {
+			siteName = b.SiteName
+		}
+		logo = logoURLFor(b.LogoBlobID)
+		boot.FooterText = b.FooterText
+		boot.FooterLinks = b.FooterLinks
+	}
+	title := siteName
+	if label != "" {
+		title = label + " · " + siteName
+	}
+	favicon := "/favicon.svg"
+	if logo != "" {
+		favicon = logo
+	}
+	boot.SiteName = siteName
+	boot.LogoURL = logo
+	boot.Title = title
+	boot.Favicon = favicon
+	if raw, merr := json.Marshal(boot); merr == nil {
+		data = bytes.ReplaceAll(data, []byte("/*__CARP_SITE_BOOT__*/null"), raw)
+	}
+	data = replaceFirstTag(data, "<title>", "</title>", title)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
