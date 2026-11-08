@@ -20,3 +20,7 @@ dist/.win-stage/
 .tools/prefdata/
 .tools/pref-note.txt
 .tools/shots-prefs.py
+
+# private dev artifacts (never push)
+docs/acceptance/
+docs/design-preview/
