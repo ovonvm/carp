@@ -48,7 +48,7 @@ echo "> building frontend"
 # Vite runs with emptyOutDir=false so the committed web/dist/.keep survives;
 # clear the stale bundle ourselves, keeping .keep.
 find web/dist -mindepth 1 ! -name '.keep' -exec rm -rf {} + 2>/dev/null || true
-run_pnpm --dir web run build
+APP_VERSION="$VERSION" run_pnpm --dir web run build
 if [ ! -f web/dist/index.html ]; then
   echo "build failed: web/dist/index.html is missing" >&2
   exit 1

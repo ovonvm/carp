@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { APP_VERSION_LABEL } from '../lib/version'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandMark from './BrandMark.vue'
@@ -589,7 +590,7 @@ onBeforeUnmount(() => {
             >{{ link.label }}</a>
           </nav>
         </div>
-        <span class="site-foot-version">v2.0.0</span>
+        <span class="site-foot-version">{{ APP_VERSION_LABEL }}</span>
       </footer>
     </main>
 

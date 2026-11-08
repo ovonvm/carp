@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { APP_VERSION_LABEL } from '../lib/version'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandMark from '../components/BrandMark.vue'
@@ -208,7 +209,7 @@ const features = ['私有部署', '多用户', '开放 API']
           >{{ link.label }}</a>
         </nav>
       </div>
-      <span class="login-version">v2.0.0</span>
+      <span class="login-version">{{ APP_VERSION_LABEL }}</span>
     </footer>
   </main>
 </template>
