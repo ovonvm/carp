@@ -545,7 +545,6 @@ onBeforeUnmount(() => {
 
       <footer class="public-footer">
         <div class="public-footer-text">
-          <span>由 {{ site.siteName }} 自托管网盘分享</span>
           <span v-if="site.footerText" class="public-footer-note">{{ site.footerText }}</span>
           <nav v-if="site.footerLinks.length > 0" class="public-footer-links">
             <a

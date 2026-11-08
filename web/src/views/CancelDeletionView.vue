@@ -82,7 +82,6 @@ onMounted(async () => {
 
       <footer v-if="site.hasFooter" class="public-footer">
         <div class="public-footer-text">
-          <span>由 {{ site.siteName }} 自托管网盘提供</span>
           <span v-if="site.footerText">{{ site.footerText }}</span>
           <nav v-if="site.footerLinks.length > 0" class="public-footer-links">
             <a
