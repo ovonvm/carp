@@ -35,6 +35,13 @@ const resumeAt = ref(0)
 const playing = ref(false)
 const mediaError = ref('')
 const playlistOpen = ref(true)
+const compact = () => window.matchMedia('(max-width: 760px)').matches
+watch(
+  () => store.open,
+  (open) => {
+    if (open) playlistOpen.value = !compact()
+  },
+)
 
 /** Floating audio mini window (shown only for audio when the overlay is hidden). */
 const miniPosition = ref(0)
@@ -931,10 +938,82 @@ onBeforeUnmount(() => {
   }
 }
 
+
 @media (max-width: 760px) {
-  .body,
-  .shell.audio .body {
-    grid-template-columns: minmax(0, 1fr);
+  .overlay {
+    padding: 0;
+    place-items: stretch;
   }
+  .shell.video {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+  .shell.video .bar {
+    padding: 8px 8px 8px 12px;
+  }
+  .shell.video .bar-name { font-size: 14px; }
+  .shell.video .body {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .shell.video .main {
+    position: relative;
+    justify-content: center;
+    height: 100%;
+    min-height: 0;
+    gap: 0;
+    background: #000;
+  }
+  .shell.video :deep(.video-shell) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  .shell.video :deep(.video-stage) {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
+  .shell.video :deep(.video-info) { display: none; }
+  .shell.video .resume-banner {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 3;
+  }
+  .shell.video .side {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    max-height: 46dvh;
+    overflow: auto;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.4);
+  }
+  .shell.audio {
+    width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: 0;
+  }
+  .shell.audio .bar { padding: 8px 8px 8px 12px; }
 }
+
 </style>
