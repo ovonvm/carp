@@ -7,8 +7,8 @@ Linux 上推荐用安装包自带的 `install.sh`：它会安装程序、创建�
 ## 4.1 安装包方式（推荐）
 
 ```bash
-tar -xzf carp-v2.0.0-linux-amd64.tar.gz
-cd carp-v2.0.0-linux-amd64
+tar -xzf carp-v2.2.1-linux-amd64.tar.gz
+cd carp-v2.2.1-linux-amd64
 sha256sum -c SHA256SUMS
 sudo ./install.sh
 ```
@@ -96,7 +96,7 @@ sudo chown -R carp:carp /opt/carp/data
 
 ```bash
 sudo ./scripts/backup.sh                      # 先备份
-sudo carp upgrade --binary ./carp-v2.0.1 --prefix /opt/carp --port 50011
+sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011
 ```
 
 `carp upgrade` 会：停止服务 → 备份现有二进制 → 替换 → 启动 → 等健康检查通过；失败会自动换回旧二进制。旧的二进制会保留为 `carp.bak-<时间戳>`，需要时手工回滚。

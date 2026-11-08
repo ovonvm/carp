@@ -20,15 +20,15 @@
 </header>
 <div class="shell">
   <aside class="side" id="side">
-    <nav><div class="nav-group"><div class="nav-chapter">开始</div><ul><li><a href="./" data-slug="index">Carp 2.0 使用手册</a></li><li><a href="quickstart.html" data-slug="quickstart">1. 快速开始</a></li><li><a href="requirements.html" data-slug="requirements">2. 环境与依赖</a></li><li><a href="windows.html" data-slug="windows">3. Windows 部署</a></li><li><a href="linux.html" data-slug="linux">4. Linux 部署</a></li><li><a href="proxy.html" data-slug="proxy">5. 反向代理与 HTTPS</a></li><li><a href="config.html" data-slug="config">6. 配置文件说明</a></li><li><a href="upgrade.html" data-slug="upgrade">7. 升级、备份与迁移</a></li></ul></div><div class="nav-group"><div class="nav-chapter">日常使用</div><ul><li><a href="login.html" data-slug="login">8. 登录与账号</a></li><li><a href="navigation.html" data-slug="navigation">9. 导航与界面</a></li><li><a href="files.html" data-slug="files">10. 文件管理</a></li><li><a href="playback.html" data-slug="playback">11. 播放、预览与文本编辑</a></li><li><a href="trash.html" data-slug="trash">12. 回收站</a></li><li><a href="downloads.html" data-slug="downloads">13. 下载中心</a></li><li><a href="shares.html" data-slug="shares">14. 分享</a></li><li><a href="profile.html" data-slug="profile">15. 个人资料与设置</a></li></ul></div><div class="nav-group"><div class="nav-chapter">管理</div><ul><li><a href="admin.html" data-slug="admin">16. 管理后台</a></li></ul></div><div class="nav-group"><div class="nav-chapter">参考</div><ul><li><a href="faq.html" data-slug="faq">17. 常见问题</a></li></ul></div></nav>
+    <nav><div class="nav-group"><div class="nav-chapter">开始</div><ul><li><a href="./" data-slug="index">Carp 2.2 使用手册</a></li><li><a href="quickstart.html" data-slug="quickstart">1. 快速开始</a></li><li><a href="requirements.html" data-slug="requirements">2. 环境与依赖</a></li><li><a href="windows.html" data-slug="windows">3. Windows 部署</a></li><li><a href="linux.html" data-slug="linux">4. Linux 部署</a></li><li><a href="proxy.html" data-slug="proxy">5. 反向代理与 HTTPS</a></li><li><a href="config.html" data-slug="config">6. 配置文件说明</a></li><li><a href="upgrade.html" data-slug="upgrade">7. 升级、备份与迁移</a></li></ul></div><div class="nav-group"><div class="nav-chapter">日常使用</div><ul><li><a href="login.html" data-slug="login">8. 登录与账号</a></li><li><a href="navigation.html" data-slug="navigation">9. 导航与界面</a></li><li><a href="files.html" data-slug="files">10. 文件管理</a></li><li><a href="playback.html" data-slug="playback">11. 播放、预览与文本编辑</a></li><li><a href="trash.html" data-slug="trash">12. 回收站</a></li><li><a href="downloads.html" data-slug="downloads">13. 下载中心</a></li><li><a href="shares.html" data-slug="shares">14. 分享</a></li><li><a href="profile.html" data-slug="profile">15. 个人资料与设置</a></li></ul></div><div class="nav-group"><div class="nav-chapter">管理</div><ul><li><a href="admin.html" data-slug="admin">16. 管理后台</a></li></ul></div><div class="nav-group"><div class="nav-chapter">参考</div><ul><li><a href="faq.html" data-slug="faq">17. 常见问题</a></li></ul></div></nav>
   </aside>
   <main class="content">
     <article>
       <h1 class="doctitle">4. Linux 部署</h1>
       <p>Linux 上推荐用安装包自带的 <code>install.sh</code>：它会安装程序、创建受限用户、注册 systemd 服务、启动并打印初始管理员密码。也可以用便携方式直接前台运行。</p>
 <h2 id="41安装包方式推荐">4.1 安装包方式（推荐）</h2>
-<pre><code class="language-bash">tar -xzf carp-v2.0.0-linux-amd64.tar.gz
-cd carp-v2.0.0-linux-amd64
+<pre><code class="language-bash">tar -xzf carp-v2.2.1-linux-amd64.tar.gz
+cd carp-v2.2.1-linux-amd64
 sha256sum -c SHA256SUMS
 sudo ./install.sh</code></pre>
 <p><code>install.sh</code> 是 <code>carp install</code> 的薄包装，常用参数：</p>
@@ -86,7 +86,7 @@ sudo systemctl enable --now carp</code></pre>
 </tbody></table>
 <h2 id="46升级">4.6 升级</h2>
 <pre><code class="language-bash">sudo ./scripts/backup.sh                      # 先备份
-sudo carp upgrade --binary ./carp-v2.0.1 --prefix /opt/carp --port 50011</code></pre>
+sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011</code></pre>
 <p><code>carp upgrade</code> 会：停止服务 → 备份现有二进制 → 替换 → 启动 → 等健康检查通过；失败会自动换回旧二进制。旧的二进制会保留为 <code>carp.bak-&lt;时间戳&gt;</code>，需要时手工回滚。</p>
 <p>源码仓库里还有 <code>scripts/upgrade.sh &lt;新二进制&gt;</code>（不在安装包内），流程类似：自动备份 + 原子替换 + 失败回滚。</p>
 <h2 id="47卸载">4.7 卸载</h2>
