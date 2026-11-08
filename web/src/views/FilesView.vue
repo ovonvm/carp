@@ -118,6 +118,7 @@ const previewFiles = computed(() => files.items.filter((node) => node.kind === '
 const copyingIds = ref<number[]>([])
 
 const viewMode = ref<ViewMode>(readViewMode())
+const moreOpen = ref(false)
 
 const selectedIds = ref<number[]>([])
 const selection = useSelection({ items: () => files.items, selectedIds })
@@ -979,7 +980,23 @@ onBeforeUnmount(() => {
           新建文件夹
         </button>
 
-        <button class="btn btn-secondary" type="button" @click="openFolderPicker">
+        <div class="more-wrap mobile-only">
+          <button
+            class="btn btn-secondary more-button"
+            type="button"
+            aria-label="更多操作"
+            :aria-expanded="moreOpen"
+            @click="moreOpen = !moreOpen"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="3" cy="8" r="1.4" fill="currentColor" />
+              <circle cx="8" cy="8" r="1.4" fill="currentColor" />
+              <circle cx="13" cy="8" r="1.4" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+
+        <button class="btn btn-secondary desktop-only" type="button" @click="openFolderPicker">
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
             <path
               d="M2.1 5.1a1.3 1.3 0 0 1 1.3-1.3h2.2l1.1 1.3h3.9a1.3 1.3 0 0 1 1.3 1.3v4.1a1.3 1.3 0 0 1-1.3 1.3H3.4a1.3 1.3 0 0 1-1.3-1.3V5.1Z"
@@ -1000,7 +1017,7 @@ onBeforeUnmount(() => {
           上传文件夹
         </button>
 
-        <RouterLink class="btn btn-secondary" :to="{ name: 'downloads' }">
+        <RouterLink class="btn btn-secondary desktop-only" :to="{ name: 'downloads' }">
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
             <path d="M7 2.6v6.8M4.1 6.6 7 9.5l2.9-2.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
             <path d="M2.4 11.6h9.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
@@ -1008,7 +1025,7 @@ onBeforeUnmount(() => {
           下载
         </RouterLink>
 
-        <RouterLink class="btn btn-secondary" :to="{ name: 'transfers' }">
+        <RouterLink class="btn btn-secondary desktop-only" :to="{ name: 'transfers' }">
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
             <path d="M4.4 10.6a2.4 2.4 0 0 1-.3-4.8 3.4 3.4 0 0 1 6.4-.5 2.5 2.5 0 0 1 .6 4.9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
             <path d="M7 6.2v5M5.2 9.4 7 11.2l1.8-1.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
@@ -1060,6 +1077,12 @@ onBeforeUnmount(() => {
             />
           </svg>
         </button>
+      </div>
+
+      <div v-if="moreOpen" class="more-menu">
+        <button type="button" @click="moreOpen = false; openFolderPicker()">上传文件夹</button>
+        <button type="button" @click="moreOpen = false; router.push({ name: 'downloads' })">下载</button>
+        <button type="button" @click="moreOpen = false; router.push({ name: 'transfers' })">离线下载</button>
       </div>
     </header>
 
@@ -1545,18 +1568,30 @@ onBeforeUnmount(() => {
 @media (max-width: 760px) {
   .page-head {
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
+    gap: 10px;
   }
 
   .page-actions {
     width: 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
+  .page-actions::-webkit-scrollbar { display: none; }
+
   .page-actions .btn {
-    flex: 1;
+    flex: 0 0 auto;
+    height: 40px;
+    padding: 0 12px;
     justify-content: center;
   }
+
+  .page-actions .btn-primary { flex: 1 1 auto; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
 }
 
 @media (max-width: 520px) {
@@ -1573,4 +1608,24 @@ onBeforeUnmount(() => {
     justify-content: center;
   }
 }
+
+.mobile-only { display: none; }
+.more-wrap { position: relative; }
+.more-button { width: 40px; padding: 0; justify-content: center; }
+.more-menu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.more-menu button {
+  height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+.more-menu button:hover { background: var(--color-primary-soft); }
 </style>

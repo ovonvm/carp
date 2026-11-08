@@ -595,6 +595,29 @@ onBeforeUnmount(() => {
     </main>
 
     <UploadDock />
+
+    <nav class="mobile-tabs" aria-label="移动端导航">
+      <RouterLink class="mobile-tab" :to="{ name: 'files', params: { id: 0 } }">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.2h8.5A1.5 1.5 0 0 1 21 9.7v8.8A1.5 1.5 0 0 1 19.5 20h-15A1.5 1.5 0 0 1 3 18.5z" />
+        </svg>
+        <span>我的文件</span>
+      </RouterLink>
+      <RouterLink class="mobile-tab" :to="{ name: 'trash' }">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 7h16M9 7V5h6v2M6 7l1 12h10l1-12" />
+          <path d="M10 11v4M14 11v4" />
+        </svg>
+        <span>回收站</span>
+      </RouterLink>
+      <RouterLink class="mobile-tab" :to="{ name: 'settings' }">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6" />
+        </svg>
+        <span>设置</span>
+      </RouterLink>
+    </nav>
   </div>
 
   <!-- One media overlay for the whole site: audio survives route changes. -->
@@ -1240,5 +1263,39 @@ onBeforeUnmount(() => {
 .topbar {
   background: color-mix(in srgb, var(--color-bg) 88%, transparent);
   border-bottom: 1px solid var(--color-border-soft);
+}
+
+.mobile-tabs { display: none; }
+
+@media (max-width: 860px) {
+  .topbar { grid-column: 1 / -1; }
+  .content { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .mobile-tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    height: calc(58px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -6px 20px -12px rgba(90, 60, 20, 0.28);
+  }
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 11px;
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .mobile-tab.router-link-active { color: var(--color-primary-ink); font-weight: 600; }
 }
 </style>
