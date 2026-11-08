@@ -1,0 +1,27 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+// Dev server proxies API traffic to the Go backend. The port is configurable
+// through CARP_API_ORIGIN so a local conflict on :8080 can be avoided.
+const backend = process.env.CARP_API_ORIGIN ?? 'http://127.0.0.1:8080'
+
+const appVersion = process.env.APP_VERSION ?? 'dev'
+
+export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
+  base: '/',
+  plugins: [vue()],
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+    proxy: {
+      '/api': { target: backend, changeOrigin: true },
+      '/health': { target: backend, changeOrigin: true },
+    },
+  },
+  build: {
+    outDir: 'dist',
+    // build.sh clears dist/ and drops a .keep file; never wipe it.
+    emptyOutDir: false,
+  },
+})

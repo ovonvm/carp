@@ -1,0 +1,118 @@
+name: release
+
+# Builds every supported artifact on GitHub runners when a v* tag is pushed
+# (no large uploads from a local machine). Also manually runnable for a dry run.
+#
+# Artifacts:
+#   - Linux: carp-<ver>-linux-{amd64,arm64,armv7}.tar.gz (includes install.sh, systemd unit, nginx sample)
+#   - Windows: Carp-<ver>-win-{x64,arm64}.zip (single-file GUI, embeds the matching core)
+#   - Windows cores: carp-<ver>-windows-{amd64,arm64}-core.zip
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  cross:
+    name: cross-build (linux + windows cores)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git describe needs tags
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.3"
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: setup pnpm
+        shell: bash
+        run: |
+          npm install -g pnpm@11.28.5
+          pnpm --version
+      - name: build cores + linux packages
+        shell: bash
+        run: bash scripts/build-all.sh
+      - name: show artifacts
+        shell: bash
+        run: ls -lh dist/linux/*.tar.gz dist/win/*.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross
+          path: |
+            dist/linux/*.tar.gz
+            dist/win/*-core.zip
+          if-no-files-found: error
+
+  windows-gui:
+    name: windows-gui (x64 + arm64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.3"
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: setup pnpm
+        shell: bash
+        run: |
+          npm install -g pnpm@11.28.5
+          pnpm --version
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: build cores (no linux packaging needed, but the script also emits win cores)
+        shell: bash
+        run: bash scripts/build-all.sh
+      - name: build GUI x64
+        shell: bash
+        run: bash scripts/build-gui.sh x64
+      - name: build GUI arm64
+        shell: bash
+        run: bash scripts/build-gui.sh arm64
+      - name: show artifacts
+        shell: bash
+        run: ls -lh dist/Carp*.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gui
+          path: dist/Carp-*-win-*.zip
+          if-no-files-found: error
+
+  publish:
+    name: publish-release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [cross, windows-gui]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+      - name: flatten
+        shell: bash
+        run: |
+          mkdir -p out
+          find release -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec cp -v {} out/ \;
+          ls -lh out
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Carp ${{ github.ref_name }}
+          generate_release_notes: true
+          files: out/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

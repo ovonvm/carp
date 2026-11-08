@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141210" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta property="og:site_name" content="Carp" />
+    <meta property="og:title" content="Carp · 自托管网盘" />
+    <meta property="og:type" content="website" />
+    <title>Carp · 自托管网盘</title>
+    <script>
+      // Apply the saved theme before paint so reloads don't flash the default palette.
+      try {
+        var theme = localStorage.getItem('carp.theme')
+        if (theme) document.documentElement.dataset.theme = theme
+      } catch (e) {}
+    </script>
+    <script>
+      // Server-injected branding: apply title/favicon before first paint so the
+      // tab never flashes the built-in name.
+      (function () {
+        var b = /*__CARP_SITE_BOOT__*/null
+        if (!b) return
+        window.__SITE_BOOT__ = b
+        if (b.theme) {
+          document.documentElement.dataset.theme = b.theme
+          try {
+            localStorage.setItem('carp.theme', b.theme)
+          } catch (e) {}
+        }
+        if (b.title) {
+          document.title = b.title
+          var og = document.querySelector('meta[property="og:title"]')
+          if (og) og.content = b.title
+          var name = document.querySelector('meta[property="og:site_name"]')
+          if (name && b.site_name) name.content = b.site_name
+        }
+        if (b.favicon) {
+          var icon = document.querySelector('link[rel="icon"]')
+          if (icon) icon.href = b.favicon
+          var touch = document.querySelector('link[rel="apple-touch-icon"]')
+          if (touch) touch.href = b.favicon
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

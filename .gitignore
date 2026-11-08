@@ -1,0 +1,20 @@
+# 构建产物与本地数据
+/dist/
+/web/dist/
+/web/node_modules/
+/data/
+/tmp/
+*.log
+
+# 本地工具与编辑器
+.tools/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 本地测试/临时数据
+/testdata/tmp/
+*.db
+*.db-wal
+*.db-shm
