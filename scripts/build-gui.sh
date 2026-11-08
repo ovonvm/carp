@@ -14,7 +14,7 @@ case "$ARCH" in
   *) echo "ERROR: 未知架构 '$ARCH'（支持 x64 / arm64）" >&2; exit 2 ;;
 esac
 
-VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo dev)
+VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo dev)}"
 DIRTY=""
 if [[ "$VERSION" == *-dirty ]]; then DIRTY="+dirty"; VERSION="${VERSION%-dirty}"; fi
 DIST=dist
