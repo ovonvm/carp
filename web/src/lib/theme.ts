@@ -39,6 +39,7 @@ export function applyTheme(id: ThemeId): void {
   } catch {
     // ignore storage failures: the in-memory choice still applies for this page
   }
+  syncThemeColor()
 }
 
 export function themeName(id: ThemeId): string {
@@ -47,4 +48,14 @@ export function themeName(id: ThemeId): string {
 
 export function initTheme(): void {
   document.documentElement.dataset.theme = currentTheme()
+  syncThemeColor()
+}
+
+/** Keep the browser UI colour in sync with the active theme. */
+export function syncThemeColor(): void {
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim()
+  if (!bg) return
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+    meta.content = bg
+  })
 }

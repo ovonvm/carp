@@ -1481,3 +1481,13 @@ export function uploadMyAvatar(file: File): Promise<{ avatar_url: string }> {
 export function deleteMyAvatar(): Promise<void> {
   return request<void>('/api/v1/me/avatar', { method: 'DELETE' })
 }
+
+/** Inline, no-download-count preview URL for a public share node. */
+export function publicSharePreviewUrl(token: string, nodeId: number): string {
+  return `/api/v1/public/shares/${encodeURIComponent(token)}/nodes/${nodeId}/content?preview=1`
+}
+
+/** Download URL for a public share node (consumes one download when enabled). */
+export function publicShareDownloadUrl(token: string, nodeId: number): string {
+  return `/api/v1/public/shares/${encodeURIComponent(token)}/nodes/${nodeId}/content`
+}

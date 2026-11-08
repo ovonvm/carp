@@ -3,6 +3,7 @@ package httpx
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	sharesvc "carp/internal/app/shares"
@@ -395,7 +396,8 @@ func (s *Server) handlePublicShareContent(w http.ResponseWriter, r *http.Request
 		return
 	}
 	defer f.Close()
-	if r.Method != http.MethodHead {
+	preview := r.URL.Query().Get("preview") == "1"
+	if r.Method != http.MethodHead && !preview {
 		if err := s.shares.Consume(r.Context(), sh); err != nil {
 			s.writeError(w, r, err)
 			return
@@ -409,7 +411,12 @@ func (s *Server) handlePublicShareContent(w http.ResponseWriter, r *http.Request
 		ct = "application/octet-stream"
 	}
 	w.Header().Set("Content-Type", ct)
-	w.Header().Set("Content-Disposition", contentDisposition(node.Name))
+	disposition := contentDisposition(node.Name)
+	if preview && previewInlineType(ct) {
+		disposition = strings.Replace(disposition, "attachment", "inline", 1)
+	}
+	w.Header().Set("Content-Disposition", disposition)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("ETag", `"`+sha+`"`)
 	w.Header().Set("Cache-Control", "private, max-age=0, must-revalidate")
 	w.Header().Set("Accept-Ranges", "bytes")
@@ -427,4 +434,15 @@ func shareToken(r *http.Request) (string, error) {
 		return "", apperr.ErrNotFound
 	}
 	return token, nil
+}
+
+// previewInlineType reports whether a MIME type is safe to render inline for a
+// public-share preview. Anything else stays an attachment so a shared HTML/SVG
+// file cannot execute script on the application origin.
+func previewInlineType(contentType string) bool {
+	ct := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	if strings.HasPrefix(ct, "image/") || strings.HasPrefix(ct, "video/") || strings.HasPrefix(ct, "audio/") {
+		return true
+	}
+	return ct == "application/pdf" || ct == "text/plain"
 }

@@ -2,8 +2,14 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import BrandMark from '../components/BrandMark.vue'
+import PreviewOverlay from '../components/PreviewOverlay.vue'
+import GlobalMediaOverlay from '../components/player/GlobalMediaOverlay.vue'
 import { publicDownloadUrl } from '../api/client'
-import type { PublicNode, PublicShareMeta } from '../api/client'
+import type { NodeItem, PublicNode, PublicShareMeta } from '../api/client'
+import { previewKind } from '../lib/preview'
+import { mediaKind } from '../lib/media'
+import { useMediaStore } from '../stores/media'
+import { useSiteStore } from '../stores/site'
 import { formatBytes } from '../lib/format'
 import { shareExpiryLabel } from '../lib/shareStatus'
 import { PACK_DOWNLOAD_LIMIT } from '../lib/download'
@@ -20,7 +26,13 @@ interface Crumb {
 const route = useRoute()
 const share = usePublicShareStore()
 const downloads = useDownloadsStore()
+const media = useMediaStore()
+const site = useSiteStore()
 const toast = useToast()
+
+const previewOpen = ref(false)
+const previewFiles = ref<NodeItem[]>([])
+const previewId = ref<number | null>(null)
 
 const password = ref('')
 const showPassword = ref(false)
@@ -105,6 +117,56 @@ const fileUrl = computed(() => (share.meta ? publicDownloadUrl(share.token, shar
 
 function downloadUrlFor(node: PublicNode): string {
   return publicDownloadUrl(share.token, node.id)
+}
+
+/** Adapt a public entry to the node shape shared by the preview/player overlays. */
+function asNodeItem(node: PublicNode | { id: number; name: string; kind: string; size: number }): NodeItem {
+  const updated = 'updated_at' in node ? node.updated_at : new Date().toISOString()
+  return {
+    id: node.id,
+    parent_id: 0,
+    kind: node.kind === 'dir' ? 'dir' : 'file',
+    name: node.name,
+    size: node.size,
+    revision: '',
+    created_at: updated,
+    updated_at: updated,
+  }
+}
+
+function previewableEntries(): NodeItem[] {
+  return share.entries
+    .filter((node) => node.kind === 'file' && previewKind(node.name) !== null)
+    .map((node) => asNodeItem(node))
+}
+
+function canPreview(name: string): boolean {
+  return previewKind(name) !== null
+}
+
+/** Open the appropriate overlay: dedicated player for A/V, preview overlay otherwise. */
+function openPreview(node: PublicNode | { id: number; name: string; kind: string; size: number }): void {
+  if (node.kind === 'dir') return
+  media.setShareToken(share.token)
+  if (mediaKind(node.name)) {
+    const entries = share.entries.map((entry) => asNodeItem(entry))
+    media.openWith(asNodeItem(node), entries)
+    return
+  }
+  previewFiles.value = previewableEntries()
+  previewId.value = node.id
+  previewOpen.value = true
+}
+
+function previewSingleFile(): void {
+  const meta = share.meta
+  if (!meta) return
+  openPreview({ id: meta.node_id, name: meta.name ?? '文件', kind: 'file', size: meta.size ?? 0 })
+}
+
+function downloadEntry(node: PublicNode | { id: number; name: string; size: number }): void {
+  downloads.enqueue([{ url: downloadUrlFor(node as PublicNode), name: node.name, size: node.size }])
+  downloads.openPanel()
 }
 
 /** Folder shares download one file per request; keep the batch small. */
@@ -193,12 +255,23 @@ onMounted(() => {
   ticker = window.setInterval(() => {
     now.value = Date.now()
   }, 30_000)
+  void site.ensure()
   void load()
 })
+
+// Tab title: share name once loaded, fall back to the route title.
+watch(
+  () => share.meta?.name,
+  (name) => {
+    site.setPageTitle(name || '分享')
+  },
+)
 
 onBeforeUnmount(() => {
   if (ticker !== null) window.clearInterval(ticker)
   ticker = null
+  media.stop()
+  media.setShareToken(null)
   share.reset()
 })
 </script>
@@ -207,8 +280,9 @@ onBeforeUnmount(() => {
   <div class="public-page">
     <div class="public-shell" :class="{ 'is-wide': showDir }">
       <header class="brand">
-        <BrandMark :size="26" />
-        <span class="wordmark">Carp</span>
+        <img v-if="site.hasLogo" class="brand-logo" :src="site.logoURL" :alt="site.siteName" />
+        <BrandMark v-else :size="26" />
+        <span class="wordmark">{{ site.siteName }}</span>
         <span class="brand-note">分享</span>
       </header>
 
@@ -315,6 +389,15 @@ onBeforeUnmount(() => {
               </div>
             </dl>
 
+            <button
+              v-if="canPreview(share.meta.name ?? '')"
+              class="btn btn-secondary btn-block preview-button"
+              type="button"
+              @click="previewSingleFile"
+            >
+              预览
+            </button>
+
             <a v-if="canDownload" class="btn btn-primary btn-block download-button" :href="fileUrl" download>
               <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M8 2.6v8.1M4.8 7.5 8 10.7l3.2-3.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -417,6 +500,19 @@ onBeforeUnmount(() => {
                     <span class="entry-name">{{ node.name }}</span>
                     <span class="entry-size">{{ formatBytes(node.size) }}</span>
                   </span>
+                  <button
+                    v-if="canPreview(node.name)"
+                    class="entry-preview"
+                    type="button"
+                    :aria-label="`预览 ${node.name}`"
+                    title="预览"
+                    @click="openPreview(node)"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+                      <circle cx="12" cy="12" r="2.8" />
+                    </svg>
+                  </button>
                   <a
                     v-if="canDownload"
                     class="entry-download"
@@ -448,11 +544,34 @@ onBeforeUnmount(() => {
       </main>
 
       <footer class="public-footer">
-        <span>由 Carp 自托管网盘分享</span>
+        <div class="public-footer-text">
+          <span>由 {{ site.siteName }} 自托管网盘分享</span>
+          <span v-if="site.footerText" class="public-footer-note">{{ site.footerText }}</span>
+          <nav v-if="site.footerLinks.length > 0" class="public-footer-links">
+            <a
+              v-for="link in site.footerLinks"
+              :key="link.url"
+              :href="link.url"
+              :target="link.url.startsWith('http') ? '_blank' : undefined"
+              rel="noopener noreferrer"
+            >{{ link.label }}</a>
+          </nav>
+        </div>
         <button class="footer-link" type="button" @click="share.open(token)">
           刷新
         </button>
       </footer>
+
+      <PreviewOverlay
+        :open="previewOpen"
+        :files="previewFiles"
+        :file-id="previewId"
+        :url-for="media.urlFor"
+        @close="previewOpen = false"
+        @navigate="previewId = $event"
+        @download="downloadEntry"
+      />
+      <GlobalMediaOverlay />
     </div>
   </div>
 </template>
@@ -947,5 +1066,65 @@ button.entry-main:hover .entry-name {
   .fact + .fact {
     border-left: 0;
   }
+}
+</style>
+
+<style scoped>
+.brand-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-button {
+  margin-bottom: 8px;
+}
+
+.entry-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  flex: none;
+}
+
+.entry-preview:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary-soft, var(--color-primary));
+}
+
+.public-footer-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.public-footer-note {
+  color: var(--color-faint, var(--color-muted));
+}
+
+.public-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.public-footer-links a {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.public-footer-links a:hover {
+  color: var(--color-text);
 }
 </style>

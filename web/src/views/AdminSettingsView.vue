@@ -7,9 +7,11 @@ import { getAdminQB, updateAdminQB, testAdminQB, type AdminQBConfig, type AdminQ
 import BrandingCard from '../components/admin/BrandingCard.vue'
 import { useAdminStore } from '../stores/admin'
 import { useAuthStore } from '../stores/auth'
+import { useSiteStore } from '../stores/site'
 
 const admin = useAdminStore()
 const auth = useAuthStore()
+const site = useSiteStore()
 const toast = useToast()
 
 const SITE_NAME_MAX = 64
@@ -95,6 +97,7 @@ async function save(): Promise<void> {
     const ok = await admin.saveSettings(patch)
     if (ok) {
       fillFromStore()
+      await site.refresh()
       toast.push('系统设置已保存')
     }
   } catch (cause) {

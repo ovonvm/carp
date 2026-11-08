@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { NodeItem } from '../../api/client'
-import { downloadUrl } from '../../api/client'
 import { formatClock } from '../../lib/media'
 import { usePlayerStore } from '../../stores/player'
+import { useMediaStore } from '../../stores/media'
 
 const props = defineProps<{
   node: NodeItem
@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const store = usePlayerStore()
+const media = useMediaStore()
 const videoRef = ref<HTMLVideoElement | null>(null)
 const stageRef = ref<HTMLElement | null>(null)
 
@@ -31,7 +32,7 @@ const controlsVisible = ref(true)
 let hideTimer: number | null = null
 let lastSaved = 0
 
-const src = computed(() => downloadUrl(props.node.id))
+const src = computed(() => media.urlFor(props.node.id))
 const progressPercent = computed(() => (duration.value > 0 ? Math.min(100, (currentTime.value / duration.value) * 100) : 0))
 const bufferedPercent = computed(() => (duration.value > 0 ? Math.min(100, (bufferedEnd.value / duration.value) * 100) : 0))
 

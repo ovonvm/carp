@@ -4,9 +4,11 @@ import { useRoute } from 'vue-router'
 import BrandMark from '../components/BrandMark.vue'
 import { messageForCancelDeletion } from '../lib/errors'
 import { useSettingsStore } from '../stores/settings'
+import { useSiteStore } from '../stores/site'
 
 const route = useRoute()
 const settings = useSettingsStore()
+const site = useSiteStore()
 
 type Phase = 'checking' | 'done' | 'failed'
 
@@ -32,6 +34,7 @@ const description = computed(() => {
 })
 
 onMounted(async () => {
+  void site.ensure()
   if (!token.value) {
     phase.value = 'failed'
     return
@@ -50,8 +53,9 @@ onMounted(async () => {
   <div class="public-page">
     <main class="public-shell">
       <header class="brand-row">
-        <BrandMark :size="26" />
-        <span class="wordmark">Carp</span>
+        <img v-if="site.hasLogo" class="brand-logo" :src="site.logoURL" :alt="site.siteName" />
+        <BrandMark v-else :size="26" />
+        <span class="wordmark">{{ site.siteName }}</span>
         <span class="brand-hint">账号注销</span>
       </header>
 
@@ -76,7 +80,21 @@ onMounted(async () => {
         </RouterLink>
       </section>
 
-      <p class="foot">由 Carp 自托管网盘提供</p>
+      <footer v-if="site.hasFooter" class="public-footer">
+        <div class="public-footer-text">
+          <span>由 {{ site.siteName }} 自托管网盘提供</span>
+          <span v-if="site.footerText">{{ site.footerText }}</span>
+          <nav v-if="site.footerLinks.length > 0" class="public-footer-links">
+            <a
+              v-for="link in site.footerLinks"
+              :key="link.url"
+              :href="link.url"
+              :target="link.url.startsWith('http') ? '_blank' : undefined"
+              rel="noopener"
+            >{{ link.label }}</a>
+          </nav>
+        </div>
+      </footer>
     </main>
   </div>
 </template>
@@ -191,5 +209,41 @@ onMounted(async () => {
   .spinner {
     animation: none;
   }
+}
+</style>
+
+<style scoped>
+.brand-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  object-fit: cover;
+  display: block;
+}
+.public-footer {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 14px;
+  color: var(--color-muted);
+  font-size: 12.5px;
+}
+.public-footer-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  justify-content: center;
+  align-items: center;
+}
+.public-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.public-footer-links a {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+.public-footer-links a:hover {
+  color: var(--color-primary);
 }
 </style>

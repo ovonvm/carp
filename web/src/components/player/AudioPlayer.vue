@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { NodeItem } from '../../api/client'
-import { downloadUrl } from '../../api/client'
 import { formatBytes } from '../../lib/format'
 import { extensionOf, fileStem, formatClock } from '../../lib/media'
 import { activeLyricIndex, parseLrc, type LyricLine } from '../../lib/lyrics'
@@ -37,8 +36,8 @@ let analyser: AnalyserNode | null = null
 let rafId = 0
 let lastSaved = 0
 
-const src = computed(() => downloadUrl(props.node.id))
-const coverSrc = computed(() => (props.cover && !coverBroken.value ? downloadUrl(props.cover.id) : null))
+const src = computed(() => media.urlFor(props.node.id))
+const coverSrc = computed(() => (props.cover && !coverBroken.value ? media.urlFor(props.cover.id) : null))
 const title = computed(() => fileStem(props.node.name))
 const formatLabel = computed(() => extensionOf(props.node.name).toUpperCase() || '音频')
 const activeLyric = computed(() => activeLyricIndex(lyricLines.value, currentTime.value * 1000))
@@ -291,7 +290,7 @@ async function loadLyrics(): Promise<void> {
   if (!sidecar || sidecar.size > 512 * 1024) return
   lyricsFetching.value = true
   try {
-    const response = await fetch(downloadUrl(sidecar.id))
+    const response = await fetch(media.urlFor(sidecar.id))
     if (!response.ok) return
     lyricLines.value = parseLrc(await response.text())
   } finally {

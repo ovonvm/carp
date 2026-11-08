@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { downloadUrl, type NodeItem } from '../../api/client'
+import type { NodeItem } from '../../api/client'
 import { fileStem, formatClock, subtitleFormat } from '../../lib/media'
 import { convertSubtitle } from '../../lib/subtitles'
 import { useMediaStore } from '../../stores/media'
@@ -160,7 +160,7 @@ onMounted(() => {
 function download(): void {
   if (!current.value) return
   const anchor = document.createElement('a')
-  anchor.href = downloadUrl(current.value.id)
+  anchor.href = store.downloadURL(current.value.id)
   anchor.download = current.value.name
   document.body.appendChild(anchor)
   anchor.click()
@@ -258,12 +258,12 @@ async function loadSubtitle(): Promise<void> {
     return
   }
   if (format === 'vtt') {
-    subtitleUrl.value = downloadUrl(sidecar.id)
+    subtitleUrl.value = store.urlFor(sidecar.id)
     return
   }
   subtitleLoading.value = true
   try {
-    const response = await fetch(downloadUrl(sidecar.id))
+    const response = await fetch(store.urlFor(sidecar.id))
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const converted = convertSubtitle(sidecar.name, await response.text())
     subtitleUrl.value = URL.createObjectURL(new Blob([converted.vtt], { type: 'text/vtt' }))
@@ -292,7 +292,7 @@ function setupMediaSession(): void {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: fileStem(current.value.name),
       artist: 'Carp',
-      artwork: store.cover ? [{ src: downloadUrl(store.cover.id), sizes: '512x512' }] : [],
+      artwork: store.cover ? [{ src: store.urlFor(store.cover.id), sizes: '512x512' }] : [],
     })
     navigator.mediaSession.setActionHandler('play', () => controls()?.play())
     navigator.mediaSession.setActionHandler('pause', () => controls()?.pause())
@@ -434,7 +434,7 @@ onBeforeUnmount(() => {
     <div v-if="miniVisible" class="audio-mini" data-audio-mini role="region" aria-label="音频播放器小窗">
       <div class="mini-head">
         <span class="mini-cover">
-          <img v-if="store.cover" :src="downloadUrl(store.cover.id)" alt="" />
+          <img v-if="store.cover" :src="store.urlFor(store.cover.id)" alt="" />
           <svg v-else width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
             <path
               d="M8 14.1a1.9 1.9 0 1 1-3.8 0 1.9 1.9 0 0 1 3.8 0Zm0 0V6.2l6.8-1.7v7.6"

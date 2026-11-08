@@ -110,7 +110,15 @@
 <tr><td>忘记管理员密码</td><td>用 <code>carp reset-admin-password</code>（Linux）或控制面板重置（Windows），见 07</td></tr>
 </tbody></table>
 <h2 id="1611外观与品牌仅root">16.11 外观与品牌（仅 root）</h2>
-<p>系统设置页底部「外观与品牌」控制全站的品牌呈现：上传 Logo（PNG/JPG，≤512 KB，建议 512×512 透明底，用作侧栏、登录页与 favicon）、登录页主/副标题（留空用默认文案）、页脚文字与最多 3 条链接（http/https 或站内 <code>/</code> 开头的路径）。保存后立即对访客生效，无需重启；「恢复默认」清空所有自定义。</p>
+<p>系统设置页底部「外观与品牌」控制全站的品牌呈现：上传 Logo（PNG/JPG，≤512 KB，建议 512×512 透明底）、登录页主/副标题（留空用默认文案）、页脚文字与最多 3 条链接（http/https 或站内 <code>/</code> 开头的路径）。保存后立即对访客生效，无需重启；「恢复默认」清空所有自定义。</p>
+<p>品牌生效范围：</p>
+<ul>
+  <li>浏览器标签页标题统一为「页面名 · 站点名」（如「我的文件 · 站点名」），分享页为「文件名 · 站点名」。</li>
+  <li>侧栏、登录页、注册页、分享页、账号注销页显示站点 Logo 与站点名；未上传 Logo 时使用内置默认图标（<code>/favicon.svg</code>）。</li>
+  <li>favicon 与 apple-touch-icon 跟随 Logo；无 Logo 时使用默认图标。</li>
+  <li>页脚文字与链接显示在分享页、注册页、账号注销页的页脚；主界面页脚仍显示「© 年份 站点名」+ 链接。</li>
+  <li>浏览器 UI 颜色（<code>theme-color</code>）与页面 <code>og:title</code> / <code>og:site_name</code> 随站点名与主题同步。</li>
+</ul>
 <p>品牌图片按 blob 保存，替换只解引用旧图，物理回收由 <code>gc</code> 在宽限期后完成。</p>
 
     </article>

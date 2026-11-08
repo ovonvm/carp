@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { NodeItem } from '../api/client'
+import { downloadUrl, publicSharePreviewUrl, publicShareDownloadUrl, type NodeItem } from '../api/client'
 import { findSidecar, mediaKind, mediaSiblings, type MediaKind } from '../lib/media'
 
 /**
@@ -18,6 +18,8 @@ export const useMediaStore = defineStore('media', () => {
   /** Video is minimized to a single top-bar icon; playback is paused while collapsed. */
   const videoMini = ref(false)
   const node = ref<NodeItem | null>(null)
+  /** When set, players read content through the public share preview endpoint. */
+  const shareToken = ref<string | null>(null)
   /** All files of the directory the current track came from (playlist + sidecars). */
   const dirFiles = ref<NodeItem[]>([])
 
@@ -31,6 +33,21 @@ export const useMediaStore = defineStore('media', () => {
   const cover = computed(() => (node.value && kind.value === 'audio' ? findSidecar(dirFiles.value, node.value, 'cover') : null))
   const lyrics = computed(() => (node.value && kind.value === 'audio' ? findSidecar(dirFiles.value, node.value, 'lyrics') : null))
   const subtitle = computed(() => (node.value && kind.value === 'video' ? findSidecar(dirFiles.value, node.value, 'subtitles') : null))
+
+  /** Bind playback to a public share token (null restores personal URLs). */
+  function setShareToken(token: string | null): void {
+    shareToken.value = token
+  }
+
+  /** Media/preview URL: inline and free of the share download budget. */
+  function urlFor(id: number): string {
+    return shareToken.value ? publicSharePreviewUrl(shareToken.value, id) : downloadUrl(id)
+  }
+
+  /** Real download URL (consumes a share download when the budget allows). */
+  function downloadURL(id: number): string {
+    return shareToken.value ? publicShareDownloadUrl(shareToken.value, id) : downloadUrl(id)
+  }
 
   function openWith(target: NodeItem, files: NodeItem[]): void {
     if (!mediaKind(target.name)) return
@@ -94,12 +111,16 @@ export const useMediaStore = defineStore('media', () => {
     miniOpen,
     videoMini,
     node,
+    shareToken,
     dirFiles,
     kind,
     playlist,
     cover,
     lyrics,
     subtitle,
+    setShareToken,
+    urlFor,
+    downloadURL,
     openWith,
     hide,
     minimizeVideo,

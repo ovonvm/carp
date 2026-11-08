@@ -4,6 +4,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import BrandMark from '../components/BrandMark.vue'
 import { ApiError, fetchRegistrationEnabled, registerAccount } from '../api/client'
 import { useToast } from '../composables/useToast'
+import { useSiteStore } from '../stores/site'
 import { messageForRegister } from '../lib/errors'
 import {
   EMAIL_MAX,
@@ -17,6 +18,7 @@ import {
 
 const router = useRouter()
 const toast = useToast()
+const site = useSiteStore()
 
 const PASSWORD_MIN = 8
 const PASSWORD_MAX = 128
@@ -139,6 +141,7 @@ function onFieldBlur(field: keyof typeof touched): void {
 }
 
 onMounted(() => {
+  void site.ensure()
   void checkRegistration()
 })
 </script>
@@ -147,8 +150,9 @@ onMounted(() => {
   <main class="register-page">
     <section class="register-card" aria-labelledby="register-title">
       <div class="register-brand">
-        <BrandMark :size="30" />
-        <h1 id="register-title" class="register-wordmark">Carp</h1>
+        <img v-if="site.hasLogo" class="brand-logo" :src="site.logoURL" :alt="site.siteName" />
+        <BrandMark v-else :size="30" />
+        <h1 id="register-title" class="register-wordmark">{{ site.siteName }}</h1>
       </div>
       <p class="register-subtitle">创建账号 · 自托管网盘</p>
 
@@ -305,6 +309,19 @@ onMounted(() => {
         已有账号？
         <RouterLink class="register-link" :to="{ name: 'login' }">返回登录</RouterLink>
       </p>
+
+      <footer v-if="site.hasFooter" class="site-footer">
+        <span v-if="site.footerText">{{ site.footerText }}</span>
+        <nav v-if="site.footerLinks.length > 0" class="site-footer-links">
+          <a
+            v-for="link in site.footerLinks"
+            :key="link.url"
+            :href="link.url"
+            :target="link.url.startsWith('http') ? '_blank' : undefined"
+            rel="noopener"
+          >{{ link.label }}</a>
+        </nav>
+      </footer>
     </section>
   </main>
 </template>
@@ -475,5 +492,41 @@ onMounted(() => {
   .register-subtitle {
     padding-left: 0;
   }
+}
+</style>
+
+<style scoped>
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin-top: 14px;
+  color: var(--color-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.site-footer-links a {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.site-footer-links a:hover {
+  color: var(--color-primary);
 }
 </style>

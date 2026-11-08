@@ -11,12 +11,17 @@ import {
   type TextPreview,
 } from '../lib/preview'
 
-const props = defineProps<{
-  open: boolean
-  /** Previewable files of the current directory, in list order. */
-  files: NodeItem[]
-  fileId: number | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    /** Previewable files of the current directory, in list order. */
+    files: NodeItem[]
+    fileId: number | null
+    /** Override the content URL (public share previews use a token-scoped URL). */
+    urlFor?: (id: number) => string
+  }>(),
+  { urlFor: (id: number) => downloadUrl(id) },
+)
 
 const emit = defineEmits<{
   close: []
@@ -30,7 +35,7 @@ const overlayRef = ref<HTMLElement | null>(null)
 const index = computed(() => props.files.findIndex((item) => item.id === props.fileId))
 const file = computed<NodeItem | null>(() => (index.value >= 0 ? (props.files[index.value] ?? null) : null))
 const kind = computed<PreviewKind>(() => (file.value ? previewKind(file.value.name) : null))
-const contentUrl = computed(() => (file.value ? downloadUrl(file.value.id) : ''))
+const contentUrl = computed(() => (file.value ? props.urlFor(file.value.id) : ''))
 const metaText = computed(() =>
   file.value ? `${previewKindLabel(kind.value)} · ${formatBytes(file.value.size)}` : '',
 )
@@ -61,7 +66,7 @@ async function loadText(): Promise<void> {
   textLoading.value = true
   textState.value = null
   try {
-    textState.value = await fetchTextPreview(downloadUrl(current.id))
+    textState.value = await fetchTextPreview(props.urlFor(current.id))
   } finally {
     textLoading.value = false
   }

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { fetchSiteConfig, type SiteFooterLink } from '../api/client'
 
@@ -18,11 +18,14 @@ export const useSiteStore = defineStore('site', () => {
   const loginTitle = ref(DEFAULT_TITLE)
   const loginSubtitle = ref(DEFAULT_SUBTITLE)
   const footerText = ref('')
+  /** Per-route label (我的文件/分享/登录…), joined with the site name. */
+  const pageTitle = ref('')
   const footerLinks = ref<SiteFooterLink[]>([])
 
   const hasLogo = computed(() => logoURL.value !== '')
   const titleLines = computed(() => loginTitle.value.split('\n').filter((line) => line.trim() !== ''))
   const hasFooter = computed(() => footerText.value.trim() !== '' || footerLinks.value.length > 0)
+  const documentTitle = computed(() => (pageTitle.value ? `${pageTitle.value} · ${siteName.value}` : siteName.value))
 
   let pending: Promise<void> | null = null
 
@@ -40,6 +43,7 @@ export const useSiteStore = defineStore('site', () => {
         footerText.value = cfg.footer?.text || ''
         footerLinks.value = Array.isArray(cfg.footer?.links) ? cfg.footer.links : []
         applyFavicon()
+        applyTitle()
       } catch {
         // Defaults stay in place.
       } finally {
@@ -58,9 +62,27 @@ export const useSiteStore = defineStore('site', () => {
 
   function applyFavicon(): void {
     const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-    if (!link) return
-    link.href = logoURL.value || '/favicon.svg'
+    if (link) link.href = logoURL.value || '/favicon.svg'
+    const touch = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]')
+    if (touch) touch.href = logoURL.value || '/favicon.svg'
   }
+
+  function applyTitle(): void {
+    document.title = documentTitle.value
+    const ogName = document.querySelector<HTMLMetaElement>('meta[property="og:site_name"]')
+    if (ogName) ogName.content = siteName.value
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]')
+    if (ogTitle) ogTitle.content = documentTitle.value
+  }
+
+  /** Called by the router and by pages that own a dynamic title (share name). */
+  function setPageTitle(title: string): void {
+    pageTitle.value = title
+    applyTitle()
+  }
+
+  // Site name / page title can change after the admin saves branding.
+  watch([siteName, pageTitle], applyTitle)
 
   return {
     loaded,
@@ -72,8 +94,11 @@ export const useSiteStore = defineStore('site', () => {
     titleLines,
     footerText,
     footerLinks,
+    pageTitle,
+    documentTitle,
     hasFooter,
     ensure,
     refresh,
+    setPageTitle,
   }
 })
