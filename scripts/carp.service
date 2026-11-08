@@ -1,0 +1,38 @@
+# Carp systemd unit (Linux). Installed by `sudo carp install` to
+# /etc/systemd/system/carp.service; `carp gen-unit` prints this template with
+# the current layout. Configuration lives in /opt/carp/carp.env.
+[Unit]
+Description=Carp cloud drive
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=carp
+Group=carp
+WorkingDirectory=/opt/carp
+EnvironmentFile=/opt/carp/carp.env
+ExecStart=/opt/carp/carp serve
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+LimitNOFILE=65536
+
+# Filesystem and privilege hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/carp
+
+# 512 MB baseline (raise MemoryMax and switch to -profile high on bigger hosts)
+MemoryMax=512M
+MemorySwapMax=0
+CPUQuota=100%
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=carp
+
+[Install]
+WantedBy=multi-user.target
