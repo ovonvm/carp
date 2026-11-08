@@ -106,7 +106,6 @@ async function submit(): Promise<void> {
   }
 }
 
-const features = ['私有部署', '多用户', '开放 API']
 </script>
 
 <template>
@@ -127,10 +126,6 @@ const features = ['私有部署', '多用户', '开放 API']
           </h1>
           <p class="brand-subtitle">{{ site.loginSubtitle }}</p>
         </div>
-
-        <ul class="brand-points">
-          <li v-for="point in features" :key="point">{{ point }}</li>
-        </ul>
       </section>
 
       <section class="form-panel">
@@ -280,26 +275,6 @@ const features = ['私有部署', '多用户', '开放 API']
   font-size: var(--fs-md);
   line-height: 1.75;
   color: var(--color-ink-soft);
-}
-
-.brand-points {
-  margin-top: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 22px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--fs-sm);
-  color: var(--color-ink-soft);
-}
-
-.brand-points li::before {
-  content: '◆';
-  margin-right: 7px;
-  color: var(--color-primary);
-  font-size: 9px;
-  vertical-align: 1px;
 }
 
 .form-panel {
