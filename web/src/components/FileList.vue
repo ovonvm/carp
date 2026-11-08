@@ -236,6 +236,7 @@ function onRowDblClick(node: NodeItem, event: MouseEvent): void {
   background: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: 14px;
+  box-shadow: var(--shadow-card);
 }
 
 .cols {

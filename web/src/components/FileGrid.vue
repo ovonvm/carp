@@ -136,7 +136,7 @@ function onCardDblClick(node: NodeItem, event: MouseEvent): void {
   background: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(96, 62, 20, 0.04);
+  box-shadow: var(--shadow-card);
   transition:
     background-color var(--dur) var(--ease),
     border-color var(--dur) var(--ease),
@@ -147,7 +147,7 @@ function onCardDblClick(node: NodeItem, event: MouseEvent): void {
 .card:hover {
   background: #fff;
   border-color: var(--color-border);
-  box-shadow: 0 5px 16px rgba(96, 62, 20, 0.07);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .card.is-drop-target {
@@ -159,7 +159,7 @@ function onCardDblClick(node: NodeItem, event: MouseEvent): void {
 .card.is-selected {
   background: var(--color-primary-soft);
   border: 1.5px solid var(--color-primary);
-  box-shadow: 0 4px 12px rgba(224, 106, 31, 0.12);
+  box-shadow: var(--shadow-card), 0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 .card.is-dir {

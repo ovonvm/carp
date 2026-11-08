@@ -92,9 +92,22 @@
   /* elevation */
   --shadow-xs: 0 1px 2px rgba(90, 58, 20, 0.06);
   --shadow-sm: 0 2px 8px -4px rgba(90, 58, 20, 0.14), 0 1px 2px rgba(90, 58, 20, 0.05);
-  --shadow-md: 0 10px 24px -16px rgba(90, 58, 20, 0.22);
-  --shadow-lg: 0 24px 48px -28px rgba(90, 58, 20, 0.3);
-  --shadow-pop: 0 20px 48px -28px rgba(90, 58, 20, 0.34);
+  --shadow-md: inset 0 1px 0 var(--shadow-highlight), 0 10px 24px -16px rgba(90, 58, 20, 0.22);
+  --shadow-lg: inset 0 1px 0 var(--shadow-highlight), 0 24px 48px -28px rgba(90, 58, 20, 0.3);
+  --shadow-pop: inset 0 1px 0 var(--shadow-highlight), 0 20px 48px -28px rgba(90, 58, 20, 0.34);
+
+  /* option C: top highlight + bottom shadow everywhere */
+  --shadow-highlight: rgba(255, 255, 255, 0.78);
+  --shadow-neutral: rgba(122, 80, 33, 0.08);
+  --shadow-btn: inset 0 1px 0 var(--shadow-highlight), 0 1px 2px rgba(122, 80, 33, 0.06);
+  --shadow-btn-hover: inset 0 1px 0 var(--shadow-highlight), 0 4px 12px rgba(122, 80, 33, 0.12);
+  --shadow-primary: inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 4px 12px color-mix(in srgb, var(--color-primary) 32%, transparent);
+  --shadow-primary-hover: inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 7px 20px color-mix(in srgb, var(--color-primary) 42%, transparent);
+  --shadow-inset: inset 0 1px 2px rgba(122, 80, 33, 0.06);
+  --shadow-card: inset 0 1px 0 var(--shadow-highlight), 0 2px 8px var(--shadow-neutral);
+  --shadow-card-hover: inset 0 1px 0 var(--shadow-highlight), 0 8px 22px rgba(122, 80, 33, 0.12);
 }
 
 html[data-theme='forest'] {
@@ -269,7 +282,14 @@ html[data-theme='dark'] {
     linear-gradient(160deg, #1b1611 0%, #241c14 55%, #3a2a1c 100%);
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 2px 10px -6px rgba(0, 0, 0, 0.6);
-  --shadow-md: 0 12px 28px -18px rgba(0, 0, 0, 0.7);
-  --shadow-lg: 0 28px 56px -30px rgba(0, 0, 0, 0.8);
-  --shadow-pop: 0 24px 56px -30px rgba(0, 0, 0, 0.85);
+  --shadow-md: inset 0 1px 0 var(--shadow-highlight), 0 12px 28px -18px rgba(0, 0, 0, 0.7);
+  --shadow-lg: inset 0 1px 0 var(--shadow-highlight), 0 28px 56px -30px rgba(0, 0, 0, 0.8);
+  --shadow-pop: inset 0 1px 0 var(--shadow-highlight), 0 24px 56px -30px rgba(0, 0, 0, 0.85);
+  --shadow-highlight: rgba(255, 255, 255, 0.08);
+  --shadow-neutral: rgba(0, 0, 0, 0.5);
+  --shadow-btn: inset 0 1px 0 var(--shadow-highlight), 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-btn-hover: inset 0 1px 0 var(--shadow-highlight), 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-card: inset 0 1px 0 var(--shadow-highlight), 0 2px 10px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: inset 0 1px 0 var(--shadow-highlight), 0 8px 24px rgba(0, 0, 0, 0.6);
 }
