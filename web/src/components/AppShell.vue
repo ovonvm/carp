@@ -18,6 +18,7 @@ import { playFx, routeFxPreset } from '../lib/fx'
 import { useToast } from '../composables/useToast'
 import { formatGB } from '../lib/format'
 import { THEMES, applyTheme, currentTheme, type ThemeId } from '../lib/theme'
+import { usePreferencesStore } from '../stores/preferences'
 
 const auth = useAuthStore()
 const files = useFilesStore()
@@ -36,9 +37,14 @@ const menuOpen = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
 const themeId = ref<ThemeId>(currentTheme())
 
+const preferences = usePreferencesStore()
+
 function selectTheme(id: ThemeId): void {
   applyTheme(id)
   themeId.value = id
+  preferences.save({ theme: id }).catch(() => {
+    toast.push('主题已在本机生效，但未能同步到账号', 'error')
+  })
 }
 
 // Filename search lives in the top bar: inline on desktop, in a full-width
@@ -189,6 +195,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocumentPointerDown)
   window.removeEventListener('keydown', onWindowKeydown)
+})
+onMounted(async () => {
+  await preferences.load()
+  const accountTheme = preferences.get('theme')
+  if (accountTheme) {
+    themeId.value = accountTheme as ThemeId
+    applyTheme(accountTheme as ThemeId)
+  }
 })
 </script>
 

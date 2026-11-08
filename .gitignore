@@ -15,3 +15,8 @@ gui/**/obj/
 gui/Carp.Gui/payload/
 dist/gui-publish/
 dist/.win-stage/
+
+# local test artifacts
+.tools/prefdata/
+.tools/pref-note.txt
+.tools/shots-prefs.py

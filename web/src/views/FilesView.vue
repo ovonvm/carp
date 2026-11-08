@@ -48,6 +48,7 @@ import { mediaKind } from '../lib/media'
 import { useTrashStore } from '../stores/trash'
 import { useUploadsStore } from '../stores/uploads'
 import { useToast } from '../composables/useToast'
+import { usePreferencesStore } from '../stores/preferences'
 
 type ViewMode = 'list' | 'grid'
 
@@ -268,6 +269,9 @@ function setViewMode(mode: ViewMode): void {
   } catch {
     // Private mode / blocked storage: keep the choice for this session only.
   }
+  usePreferencesStore().save({ view_mode: mode }).catch(() => {
+    // Local choice still applies; the next load may fall back to the account value.
+  })
 }
 
 function clearSelection(): void {
@@ -905,6 +909,19 @@ onBeforeUnmount(() => {
   document.removeEventListener('dragover', blockWindowFileDrop)
   document.removeEventListener('drop', blockWindowFileDrop)
   window.removeEventListener('keydown', onWindowKeydown)
+})
+onMounted(async () => {
+  const prefs = usePreferencesStore()
+  await prefs.load()
+  const accountMode = prefs.get('view_mode')
+  if (accountMode === 'list' || accountMode === 'grid') {
+    viewMode.value = accountMode
+    try {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, accountMode)
+    } catch {
+      // best effort
+    }
+  }
 })
 </script>
 

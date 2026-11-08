@@ -24,6 +24,8 @@ func TestAPIHandlersCallAuthorizer(t *testing.T) {
 		"handleLogin":              true,
 		"handleLogout":             true,
 		"handleMe":                 true,
+		"handleGetMyPreferences":   true,
+		"handlePutMyPreferences":   true,
 		"handleDeletionStatus":     true,
 		"handleRegistrationStatus": true,
 		"handleRegister":           true,

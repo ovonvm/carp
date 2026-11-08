@@ -9,6 +9,7 @@ interface SiteBoot {
   favicon?: string
   footer_text?: string
   footer_links?: { label: string; url: string }[]
+  theme?: string
 }
 
 interface Window {

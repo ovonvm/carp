@@ -386,14 +386,42 @@ export async function login(username: string, password: string): Promise<User> {
 export interface MeState {
   user: User
   deletionEnabled: boolean
+  preferences: Record<string, string>
 }
 
+/** Per-account UI preferences (theme / view mode / effects). */
+export type PreferenceMap = Record<string, string>
+
 export async function fetchMe(): Promise<MeState> {
-  const data = await request<{ user?: User; deletion_enabled?: boolean }>('/api/v1/auth/me')
+  const data = await request<{ user?: User; deletion_enabled?: boolean; preferences?: unknown }>(
+    '/api/v1/auth/me',
+  )
   if (!data || typeof data.user !== 'object' || data.user === null) {
     throw new ApiError(200, 'invalid_response', INVALID_RESPONSE_MESSAGE)
   }
-  return { user: data.user, deletionEnabled: data.deletion_enabled === true }
+  return {
+    user: data.user,
+    deletionEnabled: data.deletion_enabled === true,
+    preferences: isStringMap(data.preferences) ? data.preferences : {},
+  }
+}
+
+function isStringMap(value: unknown): value is Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  return Object.values(value as Record<string, unknown>).every((v) => typeof v === 'string')
+}
+
+export async function fetchPreferences(): Promise<PreferenceMap> {
+  const data = await request<{ preferences?: unknown }>('/api/v1/me/preferences')
+  return isStringMap(data?.preferences) ? data.preferences : {}
+}
+
+export async function putPreferences(patch: PreferenceMap): Promise<PreferenceMap> {
+  const data = await request<{ preferences?: unknown }>('/api/v1/me/preferences', {
+    method: 'PUT',
+    body: { preferences: patch },
+  })
+  return isStringMap(data?.preferences) ? data.preferences : {}
 }
 
 export interface RegistrationStatus {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { copyText } from '../lib/clipboard'
 import { messageForDeletion, messageForPasswordChange } from '../lib/errors'
@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/auth'
 import { useSettingsStore } from '../stores/settings'
 import AvatarCard from '../components/AvatarCard.vue'
 import { fxEnabled, playFx, setFxEnabled } from '../lib/fx'
+import { usePreferencesStore } from '../stores/preferences'
 import { useToast } from '../composables/useToast'
 
 const auth = useAuthStore()
@@ -17,9 +18,12 @@ const toast = useToast()
 
 const fxOn = ref(fxEnabled())
 
+const preferences = usePreferencesStore()
+
 function toggleFx(): void {
   setFxEnabled(fxOn.value)
   if (fxOn.value) playFx('files', { x: window.innerWidth * 0.2, y: 220 })
+  preferences.save({ fx: fxOn.value ? '1' : '0' }).catch(() => {})
 }
 
 const passwordForm = reactive({ current: '', next: '', confirm: '' })
@@ -180,6 +184,14 @@ watch(deleteOpen, async (open) => {
 
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
+})
+onMounted(async () => {
+  await preferences.load()
+  const accountFx = preferences.get('fx')
+  if (accountFx === '0' || accountFx === '1') {
+    fxOn.value = accountFx === '1'
+    setFxEnabled(fxOn.value)
+  }
 })
 </script>
 

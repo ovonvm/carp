@@ -26,6 +26,12 @@
         var b = /*__CARP_SITE_BOOT__*/null
         if (!b) return
         window.__SITE_BOOT__ = b
+        if (b.theme) {
+          document.documentElement.dataset.theme = b.theme
+          try {
+            localStorage.setItem('carp.theme', b.theme)
+          } catch (e) {}
+        }
         if (b.title) {
           document.title = b.title
           var og = document.querySelector('meta[property="og:title"]')

@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import { fetchMe, login as apiLogin, logout as apiLogout } from '../api/client'
 import type { User } from '../api/client'
 import { useMediaStore } from './media'
+import { usePreferencesStore } from './preferences'
+import { applyTheme } from '../lib/theme'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -31,6 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
         const me = await fetchMe()
         user.value = me.user
         deletionEnabled.value = me.deletionEnabled
+        await syncPreferences(me.preferences)
       } catch {
         user.value = null
       } finally {
@@ -48,6 +51,8 @@ export const useAuthStore = defineStore('auth', () => {
     useMediaStore().stop()
     user.value = await apiLogin(username, password)
     hydrated.value = true
+    await usePreferencesStore().load(true)
+    await syncPreferences(usePreferencesStore().values)
   }
 
   /** Re-read the profile so `used_bytes`/`quota_bytes` follow uploads. */
@@ -67,6 +72,7 @@ export const useAuthStore = defineStore('auth', () => {
       await apiLogout()
     } finally {
       useMediaStore().stop()
+      usePreferencesStore().reset()
       user.value = null
       hydrated.value = true
     }
@@ -74,6 +80,45 @@ export const useAuthStore = defineStore('auth', () => {
 
   function clearUser(): void {
     user.value = null
+  }
+
+  /** Hydrate account preferences coming with /auth/me or login. */
+  async function syncPreferences(prefs: Record<string, string>): Promise<void> {
+    const store = usePreferencesStore()
+    store.values = prefs && Object.keys(prefs).length > 0 ? prefs : {}
+    if (Object.keys(store.values).length === 0) {
+      // Migration: first login on a device with a local theme adopts it.
+      try {
+        const local = window.localStorage.getItem('carp.theme')
+        if (local) await store.save({ theme: local })
+      } catch {
+        // Best effort only.
+      }
+    }
+    syncThemeFromPreferences()
+    syncLocalPreferences()
+  }
+
+  function syncThemeFromPreferences(): void {
+    const theme = usePreferencesStore().get('theme')
+    if (theme) applyTheme(theme as Parameters<typeof applyTheme>[0])
+  }
+
+  /** Mirror server preferences into the local cache used before hydration. */
+  function syncLocalPreferences(): void {
+    const store = usePreferencesStore()
+    const view = store.get('view_mode')
+    if (view) {
+      try {
+        window.localStorage.setItem('carp.viewMode.v2', view)
+      } catch {}
+    }
+    const fx = store.get('fx')
+    if (fx) {
+      try {
+        window.localStorage.setItem('carp.fx', fx === '1' ? '1' : '0')
+      } catch {}
+    }
   }
 
   return {

@@ -13,6 +13,7 @@ import type { RowActionKind } from '../components/RowActions.vue'
 import { copyNode, createNode, deleteNode, listNodes, updateNode } from '../api/client'
 import type { GroupPermission, NodeItem } from '../api/client'
 import { useAuthStore } from '../stores/auth'
+import { usePreferencesStore } from '../stores/preferences'
 import { useGroupsStore } from '../stores/groups'
 import { useUploadsStore } from '../stores/uploads'
 import { useToast } from '../composables/useToast'
@@ -181,6 +182,7 @@ function setViewMode(mode: 'list' | 'grid'): void {
   } catch {
     // storage may be disabled; the mode still works for this session.
   }
+  usePreferencesStore().save({ view_mode: mode }).catch(() => {})
 }
 
 function clearSelection(): void {
@@ -491,6 +493,17 @@ watch(groupId, async (next, previous) => {
   error.value = null
   crumbs.value = [{ id: current.root_id, name: current.name }]
   await load()
+})
+onMounted(async () => {
+  const prefs = usePreferencesStore()
+  await prefs.load()
+  const accountMode = prefs.get('view_mode')
+  if (accountMode === 'list' || accountMode === 'grid') {
+    viewMode.value = accountMode
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, accountMode)
+    } catch {}
+  }
 })
 </script>
 

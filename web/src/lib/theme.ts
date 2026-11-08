@@ -8,10 +8,10 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: 'sunset', name: '暖色日落', colors: ['#ffedb9', '#ffcb56', '#ffa259', '#ff7e7e'] },
+  { id: 'sunset', name: '日落', colors: ['#ffedb9', '#ffcb56', '#ffa259', '#ff7e7e'] },
   { id: 'forest', name: '森林', colors: ['#e8f5e9', '#a5d6a7', '#66bb6a', '#1b5e20'] },
-  { id: 'coast', name: '靛蓝海岸', colors: ['#f2f2ed', '#7cd5c7', '#464b71', '#118ab2'] },
-  { id: 'blossom', name: '蓝粉极光', colors: ['#fff4f4', '#ffd6e0', '#bdb2ff', '#3a86ff'] },
+  { id: 'coast', name: '海岸', colors: ['#f2f2ed', '#7cd5c7', '#464b71', '#118ab2'] },
+  { id: 'blossom', name: '极光', colors: ['#fff4f4', '#ffd6e0', '#bdb2ff', '#3a86ff'] },
   { id: 'dark', name: '暗色', colors: ['#171310', '#3d3225', '#f79a55', '#ffcb56'] },
 ]
 

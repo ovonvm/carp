@@ -222,6 +222,7 @@ type siteBoot struct {
 	Favicon     string     `json:"favicon"`
 	FooterText  string     `json:"footer_text"`
 	FooterLinks []siteLink `json:"footer_links"`
+	Theme       string     `json:"theme,omitempty"`
 }
 
 // spaRouteLabel mirrors the frontend route titles so the server can put the
@@ -317,6 +318,15 @@ func (s *Server) serveIndex(w http.ResponseWriter, r *http.Request, status int) 
 	favicon := "/favicon.svg"
 	if logo != "" {
 		favicon = logo
+	}
+	// Signed-in visitors get their account theme injected too, so the very
+	// first paint uses the saved palette instead of the default one.
+	if token := sessionToken(r); token != "" {
+		if _, principal, _, aerr := s.identity.Authenticate(r.Context(), token); aerr == nil {
+			if prefs, perr := s.db.UserPreferences(r.Context(), principal.UserID); perr == nil {
+				boot.Theme = prefs["theme"]
+			}
+		}
 	}
 	boot.SiteName = siteName
 	boot.LogoURL = logo

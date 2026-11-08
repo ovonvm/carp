@@ -78,6 +78,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
 	mux.HandleFunc("POST /api/v1/auth/logout", s.handleLogout)
 	mux.HandleFunc("GET /api/v1/auth/me", s.handleMe)
+	mux.HandleFunc("GET /api/v1/me/preferences", s.handleGetMyPreferences)
+	mux.HandleFunc("PUT /api/v1/me/preferences", s.handlePutMyPreferences)
 	mux.HandleFunc("GET /api/v1/public/site/config", s.handleSiteConfig)
 	mux.HandleFunc("GET /api/v1/public/site/logo", s.handleSiteLogo)
 	mux.HandleFunc("POST /api/v1/me/avatar", s.handlePutMyAvatar)

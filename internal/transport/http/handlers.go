@@ -146,7 +146,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setLoginCookies(w, r, res.SessionToken, res.CSRFToken, res.ExpiresAt)
-	s.writeJSON(w, http.StatusOK, map[string]any{"user": toUserJSON(res.User)})
+	prefs, _ := s.account.Preferences(r.Context(), res.User.ID)
+	s.writeJSON(w, http.StatusOK, map[string]any{"user": toUserJSON(res.User), "preferences": prefs})
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +180,11 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		s.log.Warn("read deletion policy", "err", derr)
 		deletionEnabled = false
 	}
-	s.writeJSON(w, http.StatusOK, map[string]any{"user": toUserJSON(user), "deletion_enabled": deletionEnabled})
+	prefs, perr := s.account.Preferences(r.Context(), user.ID)
+	if perr != nil {
+		s.log.Warn("read user preferences", "err", perr)
+	}
+	s.writeJSON(w, http.StatusOK, map[string]any{"user": toUserJSON(user), "deletion_enabled": deletionEnabled, "preferences": prefs})
 }
 
 func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
