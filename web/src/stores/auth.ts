@@ -113,12 +113,6 @@ export const useAuthStore = defineStore('auth', () => {
         window.localStorage.setItem('carp.viewMode.v2', view)
       } catch {}
     }
-    const fx = store.get('fx')
-    if (fx) {
-      try {
-        window.localStorage.setItem('carp.fx', fx === '1' ? '1' : '0')
-      } catch {}
-    }
   }
 
   return {

@@ -38,6 +38,9 @@
   --color-focus-soft: rgba(255, 162, 89, 0.3);
   --color-overlay: rgba(61, 36, 12, 0.45);
 
+  /* selected-button sheen */
+  --sweep-highlight: rgba(255, 168, 72, 0.55);
+
   /* sidebar */
   --sidebar-bg: #ffedb9;
   --sidebar-ink: #4a3722;
@@ -240,6 +243,7 @@ html[data-theme='blossom'] {
 }
 
 html[data-theme='dark'] {
+  --sweep-highlight: rgba(255, 255, 255, 0.18);
   color-scheme: dark;
   --color-bg: #171310;
   --color-surface: #211b15;

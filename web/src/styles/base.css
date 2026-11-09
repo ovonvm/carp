@@ -295,3 +295,38 @@ body {
     min-width: 1120px;
   }
 }
+
+
+/* Selected-button sheen: one 1s sweep at 0/5/10/15s, then quiet for good. */
+@keyframes carp-sweep {
+  0% { background-position: 200% 0; }
+  20% { background-position: -100% 0; }
+  100% { background-position: -100% 0; }
+}
+.sweep {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(115deg, transparent 35%, var(--sweep-highlight) 50%, transparent 65%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: 200% 0;
+}
+.sweep.is-active::after,
+.sweep.is-current::after,
+.sweep.is-selected::after {
+  opacity: 1;
+  animation: carp-sweep 5s linear 4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sweep::after { display: none; }
+}

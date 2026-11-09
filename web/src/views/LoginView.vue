@@ -6,7 +6,6 @@ import BrandMark from '../components/BrandMark.vue'
 import { ApiError, fetchRegistrationEnabled } from '../api/client'
 import { messageForError } from '../lib/errors'
 import { useAuthStore } from '../stores/auth'
-import { playFx } from '../lib/fx'
 import { useSiteStore } from '../stores/site'
 
 const auth = useAuthStore()
@@ -86,7 +85,6 @@ async function submit(): Promise<void> {
 
   try {
     await auth.login(username.value.trim(), password.value)
-    playFx('login', { x: window.innerWidth * 0.7, y: window.innerHeight * 0.35 })
 
     const redirect = route.query.redirect
     const target =

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatBytes } from '../lib/format'
-import { playFx } from '../lib/fx'
 import { useUploadsStore } from '../stores/uploads'
 import type { UploadTask, UploadStatus } from '../stores/uploads'
 
@@ -26,15 +25,6 @@ const STATUS_LABELS: Record<UploadStatus, string> = {
   canceled: '已取消',
   error: '上传失败',
 }
-
-watch(
-  () => uploads.activeCount,
-  (now, before) => {
-    if (now === 0 && before > 0) {
-      playFx('upload', { x: window.innerWidth - 140, y: window.innerHeight - 120 })
-    }
-  },
-)
 
 const overallPercent = computed(() => {
   const live = uploads.tasks.filter((task) => task.status !== 'done' && task.status !== 'deduped' && task.status !== 'canceled')

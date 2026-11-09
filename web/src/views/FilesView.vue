@@ -18,7 +18,6 @@ import type { NodeItem, ShareInfo } from '../api/client'
 import { downloadUrl, copyNode, restoreNode, listNodes } from '../api/client'
 import { formatGB } from '../lib/format'
 import { errorCodeOf, isCrossPolicyError, messageForError } from '../lib/errors'
-import { playFx } from '../lib/fx'
 import { runWithConcurrency } from '../lib/concurrency'
 import {
   FOLDER_UPLOAD_LIMIT,
@@ -430,7 +429,6 @@ function onShareCreated(share: ShareInfo): void {
     return
   }
   toast.push(`已创建分享链接：${share.name}`)
-  playFx('share', { x: window.innerWidth * 0.3, y: 180 })
 }
 
 function onMoveTo(parent: number): void {

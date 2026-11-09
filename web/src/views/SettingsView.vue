@@ -7,8 +7,8 @@ import { formatDateTime } from '../lib/format'
 import { useAuthStore } from '../stores/auth'
 import { useSettingsStore } from '../stores/settings'
 import AvatarCard from '../components/AvatarCard.vue'
-import { fxEnabled, playFx, setFxEnabled } from '../lib/fx'
 import { usePreferencesStore } from '../stores/preferences'
+import { THEMES, applyTheme, currentTheme, type ThemeId } from '../lib/theme'
 import { useToast } from '../composables/useToast'
 
 const auth = useAuthStore()
@@ -16,14 +16,16 @@ const settings = useSettingsStore()
 const router = useRouter()
 const toast = useToast()
 
-const fxOn = ref(fxEnabled())
-
 const preferences = usePreferencesStore()
 
-function toggleFx(): void {
-  setFxEnabled(fxOn.value)
-  if (fxOn.value) playFx('files', { x: window.innerWidth * 0.2, y: 220 })
-  preferences.save({ fx: fxOn.value ? '1' : '0' }).catch(() => {})
+const themeId = ref<ThemeId>(currentTheme())
+
+function pickTheme(id: ThemeId): void {
+  applyTheme(id)
+  themeId.value = id
+  preferences.save({ theme: id }).catch(() => {
+    toast.push('主题已在本机生效，但未能同步到账号', 'error')
+  })
 }
 
 const passwordForm = reactive({ current: '', next: '', confirm: '' })
@@ -185,13 +187,8 @@ watch(deleteOpen, async (open) => {
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
-onMounted(async () => {
-  await preferences.load()
-  const accountFx = preferences.get('fx')
-  if (accountFx === '0' || accountFx === '1') {
-    fxOn.value = accountFx === '1'
-    setFxEnabled(fxOn.value)
-  }
+onMounted(() => {
+  void preferences.load()
 })
 </script>
 
@@ -208,15 +205,26 @@ onMounted(async () => {
       <section class="panel" aria-labelledby="appearance-title">
         <header class="panel-head">
           <h2 id="appearance-title" class="panel-title">外观</h2>
-          <p class="panel-hint">个人偏好，只保存在这台设备的浏览器里。</p>
+          <p class="panel-hint">主题保存在账号里，换设备登录后自动跟随。</p>
         </header>
-        <label class="fx-toggle">
-          <input v-model="fxOn" type="checkbox" @change="toggleFx" />
-          <span>
-            <strong>趣味动效（彩蛋）</strong>
-            <em>切换页面、上传完成、登录时播放短暂粒子效果；默认关闭，系统开启「减少动态效果」时自动停用。</em>
-          </span>
-        </label>
+        <div class="theme-cards" role="radiogroup" aria-label="主题">
+          <button
+            v-for="option in THEMES"
+            :key="option.id"
+            class="theme-card sweep"
+            :class="{ 'is-selected': themeId === option.id }"
+            type="button"
+            role="radio"
+            :aria-checked="themeId === option.id"
+            @click="pickTheme(option.id)"
+          >
+            <span class="theme-card-swatch" aria-hidden="true">
+              <i v-for="color in option.colors" :key="color" :style="{ background: color }" />
+            </span>
+            <span class="theme-card-name">{{ option.name }}</span>
+            <span class="theme-card-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
       </section>
 
       <section class="panel" aria-labelledby="password-title">
@@ -592,36 +600,61 @@ onMounted(async () => {
   }
 }
 
-.fx-toggle {
-  display: flex;
-  align-items: flex-start;
+.theme-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 10px;
   margin-top: 14px;
-  padding: 12px 14px;
-  background: var(--color-surface-2);
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
   cursor: pointer;
+  text-align: left;
 }
 
-.fx-toggle input {
-  margin-top: 2px;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-primary);
+.theme-card:hover {
+  border-color: var(--color-border-strong);
 }
 
-.fx-toggle strong {
-  display: block;
+.theme-card.is-selected {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.theme-card-swatch {
+  display: flex;
+  flex: none;
+  gap: 3px;
+}
+
+.theme-card-swatch i {
+  width: 7px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.theme-card-name {
+  flex: 1;
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.fx-toggle em {
-  display: block;
-  margin-top: 3px;
-  font-style: normal;
-  font-size: var(--fs-xs);
-  color: var(--color-muted);
+.theme-card-check {
+  color: var(--color-primary);
+  font-weight: 700;
+  opacity: 0;
+}
+
+.theme-card.is-selected .theme-card-check {
+  opacity: 1;
 }
 </style>

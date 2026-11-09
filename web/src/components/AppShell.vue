@@ -14,7 +14,6 @@ import { useTrashStore } from '../stores/trash'
 import { useTransfersStore } from '../stores/transfers'
 import { useUploadsStore } from '../stores/uploads'
 import { useSiteStore } from '../stores/site'
-import { playFx, routeFxPreset } from '../lib/fx'
 import { useToast } from '../composables/useToast'
 import { formatGB } from '../lib/format'
 import { THEMES, applyTheme, currentTheme, type ThemeId } from '../lib/theme'
@@ -71,10 +70,8 @@ watch(
 
 watch(
   () => route.name,
-  (name) => {
+  () => {
     searchOpen.value = false
-    const preset = routeFxPreset(typeof name === 'string' ? name : null)
-    if (preset) playFx(preset, { x: 170, y: 170 })
   },
 )
 
@@ -176,12 +173,6 @@ watch(
 
 onMounted(() => {
   void site.ensure()
-  // The first page load has no route transition, so greet the destination once
-  // after the effects layer is mounted (the watch needs a listening canvas).
-  window.setTimeout(() => {
-    const preset = routeFxPreset(typeof route.name === 'string' ? route.name : null)
-    if (preset) playFx(preset, { x: 170, y: 170 })
-  }, 220)
   downloads.restore()
   void trash.refreshTotal()
   void groups.load()
@@ -326,7 +317,7 @@ onMounted(async () => {
             <button
               v-for="option in THEMES"
               :key="option.id"
-              class="theme-option"
+              class="theme-option sweep"
               :class="{ 'is-current': themeId === option.id }"
               type="button"
               role="menuitemradio"
@@ -372,7 +363,7 @@ onMounted(async () => {
       </RouterLink>
 
       <nav class="nav" aria-label="主导航">
-        <RouterLink class="nav-item" to="/files" active-class="is-active">
+        <RouterLink class="nav-item sweep" to="/files" active-class="is-active">
           <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
             <path
               d="M2.75 6.25A1.75 1.75 0 0 1 4.5 4.5h3.2l1.55 1.75h6.25a1.75 1.75 0 0 1 1.75 1.75v6.25a1.75 1.75 0 0 1-1.75 1.75H4.5a1.75 1.75 0 0 1-1.75-1.75V6.25Z"
@@ -390,7 +381,7 @@ onMounted(async () => {
           <RouterLink
             v-for="group in groups.groups"
             :key="group.id"
-            class="nav-item nav-item-group"
+            class="nav-item sweep nav-item-group"
             :to="`/groups/${group.id}`"
             active-class="is-active"
             :title="group.role === 'manager' ? '我是该组管理员' : '我是该组组员'"
@@ -417,7 +408,7 @@ onMounted(async () => {
           </RouterLink>
         </template>
 
-        <RouterLink class="nav-item" to="/shares" active-class="is-active">
+        <RouterLink class="nav-item sweep" to="/shares" active-class="is-active">
           <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
             <path
               d="M8.3 11.7a3.2 3.2 0 0 0 4.5 0l2.4-2.4a3.2 3.2 0 0 0-4.5-4.5l-1.2 1.2"
@@ -437,7 +428,7 @@ onMounted(async () => {
           <span>分享</span>
         </RouterLink>
 
-        <RouterLink class="nav-item" to="/trash" active-class="is-active">
+        <RouterLink class="nav-item sweep" to="/trash" active-class="is-active">
           <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
             <path
               d="M3.4 5.2h13.2M7.6 5.2V3.9a1.1 1.1 0 0 1 1.1-1.1h2.6a1.1 1.1 0 0 1 1.1 1.1v1.3M5.4 5.2l.7 9.6a1.3 1.3 0 0 0 1.3 1.2h5.2a1.3 1.3 0 0 0 1.3-1.2l.7-9.6"
@@ -454,7 +445,7 @@ onMounted(async () => {
 
         <template v-if="auth.isAdmin">
           <p class="nav-group-label">管理</p>
-          <RouterLink class="nav-item" to="/admin/users" active-class="is-active">
+          <RouterLink class="nav-item sweep" to="/admin/users" active-class="is-active">
             <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
               <circle cx="8" cy="7" r="2.7" fill="none" stroke="currentColor" stroke-width="1.4" />
               <path
@@ -474,7 +465,7 @@ onMounted(async () => {
             </svg>
             <span>用户管理</span>
           </RouterLink>
-          <RouterLink class="nav-item" to="/admin/groups" active-class="is-active">
+          <RouterLink class="nav-item sweep" to="/admin/groups" active-class="is-active">
             <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
               <circle cx="7.4" cy="7.6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4" />
               <path
@@ -494,7 +485,7 @@ onMounted(async () => {
             </svg>
             <span>组管理</span>
           </RouterLink>
-          <RouterLink class="nav-item" to="/admin/audit" active-class="is-active">
+          <RouterLink class="nav-item sweep" to="/admin/audit" active-class="is-active">
             <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
               <rect x="3.6" y="3" width="12.8" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.4" />
               <path
@@ -507,7 +498,7 @@ onMounted(async () => {
             </svg>
             <span>审计日志</span>
           </RouterLink>
-          <RouterLink class="nav-item" to="/admin/settings" active-class="is-active">
+          <RouterLink class="nav-item sweep" to="/admin/settings" active-class="is-active">
             <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
               <path
                 d="M4 6.2h12M4 10h12M4 13.8h12"
@@ -522,7 +513,7 @@ onMounted(async () => {
             </svg>
             <span>系统设置</span>
           </RouterLink>
-          <RouterLink class="nav-item" to="/admin/storage" active-class="is-active">
+          <RouterLink class="nav-item sweep" to="/admin/storage" active-class="is-active">
             <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
               <ellipse cx="10" cy="5.4" rx="5.6" ry="2.3" fill="none" stroke="currentColor" stroke-width="1.4" />
               <path
@@ -546,7 +537,7 @@ onMounted(async () => {
 
         <template v-if="auth.canManageGroups && !auth.isAdmin">
           <p class="nav-group-label">管理</p>
-          <RouterLink class="nav-item" to="/admin/groups" active-class="is-active">
+          <RouterLink class="nav-item sweep" to="/admin/groups" active-class="is-active">
             <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
               <circle cx="7.4" cy="7.6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4" />
               <path

@@ -13,14 +13,12 @@ import (
 const (
 	PreferenceTheme   = "theme"
 	PreferenceView    = "view_mode"
-	PreferenceFX      = "fx"
 	maxPreferenceSize = 64
 )
 
 var preferenceValues = map[string]map[string]bool{
 	PreferenceTheme: {"sunset": true, "forest": true, "coast": true, "blossom": true, "dark": true},
 	PreferenceView:  {"grid": true, "list": true},
-	PreferenceFX:    {"0": true, "1": true},
 }
 
 // Preferences returns every stored preference for one account.
