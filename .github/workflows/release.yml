@@ -18,6 +18,8 @@ permissions:
 
 jobs:
   cross:
+    env:
+      VERSION: ${{ github.ref_name }}
     name: cross-build (linux + windows cores)
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +53,8 @@ jobs:
           if-no-files-found: error
 
   windows-gui:
+    env:
+      VERSION: ${{ github.ref_name }}
     name: windows-gui (x64 + arm64)
     runs-on: windows-latest
     steps:

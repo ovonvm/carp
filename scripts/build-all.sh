@@ -36,6 +36,7 @@ export PATH="$NODE_DIR:$PATH"
 export GOTOOLCHAIN="${GOTOOLCHAIN:-local}"
 
 VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo dev)}"
+VERSION="${VERSION#v}"
 COMMIT="${COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo none)}"
 BUILD_TIME="${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 LDFLAGS="-s -w -X carp/internal/platform/version.Version=$VERSION -X carp/internal/platform/version.Commit=$COMMIT -X carp/internal/platform/version.BuildTime=$BUILD_TIME"

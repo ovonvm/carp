@@ -15,6 +15,7 @@ case "$ARCH" in
 esac
 
 VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo dev)}"
+VERSION="${VERSION#v}"
 # AssemblyVersion 必须是纯数字；从 VERSION 取 x.y.z，取不到就 0.0.0。
 # InformationalVersion 原样使用 VERSION，才能与 Go 核的 version.Version 精确一致
 # （两者不一致会让 GUI 进入只读模式）。
