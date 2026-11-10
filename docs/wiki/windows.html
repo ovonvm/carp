@@ -77,31 +77,40 @@
 </tbody></table>
 <p>如果 <code>Carp.exe</code> 目录不可写（例如放进了 <code>Program Files</code>），面板会整棵树回退到 <code>%LOCALAPPDATA%\Carp</code>（下有同样结构的 <code>data\</code>、<code>conf\</code>、<code>core\</code>）并在日志里说明。</p>
 <blockquote><p><strong>从旧版本升级注意</strong>：旧面板把数据放在 <code>%ProgramData%\Carp\data</code>，本版本<strong>不会自动迁移</strong>，升级后是空数据。需要保留旧数据时，把旧 <code>%ProgramData%\Carp\data</code> 里的 <code>db\</code>、<code>storage\</code>、<code>bootstrap\</code> 原样拷贝到 <code>Carp.exe\data\</code>，再启动面板。</p></blockquote>
-<h2 id="35端口被占用怎么办">3.5 端口被占用怎么办</h2>
+<h2 id="35托盘关闭窗口与开机自启">3.5 托盘、关闭窗口与开机自启</h2>
+<p>面板关窗口不会停服务，而是收进托盘（任务栏右下角通知区域）。新装的图标通常被 Windows 放进溢出区（<code>^</code> 箭头里），想让它常驻任务栏可以把它拖出来。</p>
+<ul>
+  <li>左键单击托盘图标：显示/唤回面板；</li>
+  <li>右键菜单：<code>打开面板</code>、<code>打开网盘</code>、<code>启动服务</code>/<code>停止服务</code>（随状态切换）、<code>退出</code>；</li>
+  <li><code>退出</code> 才会停止核心并结束进程，其余操作都不影响服务运行；</li>
+  <li>再次双击 <code>Carp.exe</code>（或桌面上启动它）不会开第二个实例，而是唤醒已经在托盘里的那个；</li>
+  <li>「设置」里勾选「开机自启」后，写入 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>，登录时以 <code>--minimized</code> 静默进托盘并自动启动服务。</li>
+</ul>
+<h2 id="36端口被占用怎么办">3.6 端口被占用怎么办</h2>
 <p>启动时如果 <code>50011</code> 被别的程序占用，面板会弹出提示，列出占用进程的 PID、进程名和可执行文件路径，并提供「结束进程」按钮（需要确认）。面板<strong>不会自动换端口</strong>——端口是与反向代理、书签、其它设备约定的契约，静默改掉更容易出问题。想换端口请到「设置」里改。</p>
-<h2 id="36让局域网里的其它设备访问">3.6 让局域网里的其它设备访问</h2>
+<h2 id="37让局域网里的其它设备访问">3.7 让局域网里的其它设备访问</h2>
 <p>面板固定监听 <code>127.0.0.1</code>，这是最安全的默认值。要让局域网访问：</p>
 <ol>
   <li>在本机放一个反向代理（Nginx / Caddy），把 <code>http://127.0.0.1:50011</code> 转发到局域网地址；</li>
-  <li>或者直接用命令行核心监听 <code>0.0.0.0</code>（见 3.9），并自行在防火墙放行端口。</li>
+  <li>或者直接用命令行核心监听 <code>0.0.0.0</code>（见 3.10），并自行在防火墙放行端口。</li>
 </ol>
 <blockquote><p>局域网明文访问意味着同网段的人可能看到传输内容。正式使用建议按「5. 反向代理与 HTTPS」配置 HTTPS。</p></blockquote>
-<h2 id="37升级">3.7 升级</h2>
+<h2 id="38升级">3.8 升级</h2>
 <ol>
-  <li>面板点「停止」。</li>
+  <li>托盘右键「退出」（或面板点「停止」后再退出）。</li>
   <li>用新的 <code>Carp.exe</code> 覆盖旧文件（<code>data\</code>、<code>conf\</code>、<code>core\</code> 都在同目录，不受影响）。</li>
   <li>重新双击运行，点「启动」。</li>
 </ol>
 <p>面板每次启动会按内嵌核心的 SHA-256 校验 <code>core\carp-core.exe</code>，版本不同会自动重新释放，不需要手工删 <code>core\</code>。数据库迁移在核心启动时自动执行。</p>
 <p>升级前建议先点「立即备份」做一次 zip 备份。</p>
-<h2 id="38卸载">3.8 卸载</h2>
+<h2 id="39卸载">3.9 卸载</h2>
 <ol>
-  <li>面板点「停止」，关闭窗口（核心会一起退出）。</li>
+  <li>托盘右键「退出」——面板会先停服务、再结束核心。</li>
   <li>删除 <code>Carp.exe</code> 所在文件夹 —— <strong>这会删除所有数据</strong>，需要保留请先备份。</li>
   <li>没有额外残留：面板配置与日志都在 <code>conf\</code> 里，随文件夹一起删掉。</li>
   <li>如果开过「开机自启」，面板保存设置时会同步删除/写入 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code> 下的 <code>Carp</code> 项。</li>
 </ol>
-<h2 id="39只想用命令行核心">3.9 只想用命令行核心</h2>
+<h2 id="310只想用命令行核心">3.10 只想用命令行核心</h2>
 <p>面板本质是给 <code>core\carp-core.exe</code> 套了一层界面。也可以直接运行核心：</p>
 <pre><code class="language-powershell">&amp; &#34;.\core\carp-core.exe&#34; serve -data &#34;D:\Carp\data&#34; -addr 127.0.0.1:50011</code></pre>
 <p><code>-data</code> 指向面板的数据目录即可共用同一份数据，但<strong>不要与面板同时运行</strong>（端口会冲突，面板启动时会检测到外部核心并询问是否接管）。</p>
@@ -109,7 +118,7 @@
     </article>
     <div class="pager"><a class="pn prev" href="requirements.html"><span>上一篇</span>2. 环境与依赖</a><a class="pn next" href="linux.html"><span>下一篇</span>4. Linux 部署</a></div>
   </main>
-  <aside class="toc"><div class="toc-title">本页目录</div><a class="toc-l2" href="#31系统要求">3.1 系统要求</a><a class="toc-l2" href="#32第一次运行">3.2 第一次运行</a><a class="toc-l2" href="#33控制面板有什么">3.3 控制面板有什么</a><a class="toc-l2" href="#34数据放在哪">3.4 数据放在哪</a><a class="toc-l2" href="#35端口被占用怎么办">3.5 端口被占用怎么办</a><a class="toc-l2" href="#36让局域网里的其它设备访问">3.6 让局域网里的其它设备访问</a><a class="toc-l2" href="#37升级">3.7 升级</a><a class="toc-l2" href="#38卸载">3.8 卸载</a><a class="toc-l2" href="#39只想用命令行核心">3.9 只想用命令行核心</a></aside>
+  <aside class="toc"><div class="toc-title">本页目录</div><a class="toc-l2" href="#31系统要求">3.1 系统要求</a><a class="toc-l2" href="#32第一次运行">3.2 第一次运行</a><a class="toc-l2" href="#33控制面板有什么">3.3 控制面板有什么</a><a class="toc-l2" href="#34数据放在哪">3.4 数据放在哪</a><a class="toc-l2" href="#35托盘关闭窗口与开机自启">3.5 托盘、关闭窗口与开机自启</a><a class="toc-l2" href="#36端口被占用怎么办">3.6 端口被占用怎么办</a><a class="toc-l2" href="#37让局域网里的其它设备访问">3.7 让局域网里的其它设备访问</a><a class="toc-l2" href="#38升级">3.8 升级</a><a class="toc-l2" href="#39卸载">3.9 卸载</a><a class="toc-l2" href="#310只想用命令行核心">3.10 只想用命令行核心</a></aside>
 </div>
 <script src="assets/search-index.js"></script>
 <script src="assets/app.js"></script>

@@ -39,6 +39,8 @@ public partial class MainWindow : Window
     private bool _auroraRunning;
     private bool _statusFlowRunning;
     private bool _tileDriftRunning;
+    private readonly NativeTray _tray;
+    private bool _exitRequested;
     private bool _logPending;
     private string? _coreVersion;
     private string? _lastDetail;
@@ -55,6 +57,15 @@ public partial class MainWindow : Window
 
         _uptimeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uptimeTimer.Tick += (_, _) => UpdateStatusText();
+
+        // 托盘：关窗口只是收起来，服务继续跑；只有托盘菜单「退出」才真正退出。
+        _tray = new NativeTray();
+        _tray.OpenRequested += ShowFromTray;
+        _tray.OpenWebRequested += OpenWebInBrowser;
+        _tray.ToggleServiceRequested += () => _ = StartOrStopAsync();
+        _tray.ExitRequested += ExitFromTray;
+        Closed += (_, _) => _tray.Dispose();
+
 
         HeaderMeta.Text = $"{AddrText()} · v{_guiVersion}";
         UpdateBackupUi();
@@ -326,6 +337,9 @@ public partial class MainWindow : Window
         BackupButton.IsEnabled = canControl && _state is AppState.Running or AppState.Stopped or AppState.Error;
         OpenBrowserButton.IsEnabled = running;
         ReadOnlyBadge.Visibility = _readOnly ? Visibility.Visible : Visibility.Collapsed;
+
+        var transitioning = _state is AppState.Starting or AppState.Stopping;
+        _tray.Update(running, _readOnly, AddrText(), canControl && !transitioning);
     }
 
     private void SetReadOnly(string reason)
@@ -574,7 +588,9 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------------ 网盘 / 自检 / 备份 / 密码
 
-    private void OpenBrowser_Click(object sender, RoutedEventArgs e)
+    private void OpenBrowser_Click(object sender, RoutedEventArgs e) => OpenWebInBrowser();
+
+    private void OpenWebInBrowser()
     {
         var url = _core.AppUrl;
         try
@@ -884,6 +900,14 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        // 关窗口（X）= 收进托盘，服务继续跑；只有托盘菜单「退出」才走下面的停机流程。
+        if (!_exitRequested)
+        {
+            HideToTray();
+            return;
+        }
+
         _shuttingDown = true;
         _uptimeTimer.Stop();
         SetBusy(true);
@@ -892,6 +916,61 @@ public partial class MainWindow : Window
 
         // Close() 不能在 Closing 处理过程中同步调用，交给消息循环下一轮执行。
         Dispatcher.BeginInvoke(new Action(() => _ = ShutdownAndCloseAsync()));
+    }
+
+    private void HideToTray()
+    {
+        Hide();
+        _core.AddLog("[GUI] 窗口已收进托盘，服务继续运行");
+        _tray.ShowHideHint();
+    }
+
+    /// <summary>从托盘点回来（也可能是第二个实例唤醒）。</summary>
+    public void ShowFromTray()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        ShowInTaskbar = true;
+        Activate();
+        Topmost = true;
+        Topmost = false;
+        Focus();
+    }
+
+    private void ExitFromTray()
+    {
+        _exitRequested = true;
+        Close();
+    }
+
+    /// <summary>关机/注销时同步停核心，避免留下孤儿 carp-core.exe。</summary>
+    public void ShutdownForSessionEnd()
+    {
+        try
+        {
+            _exitRequested = true;
+            _allowClose = true;
+            _uptimeTimer.Stop();
+            if (_readOnly || !_core.IsLaunched)
+            {
+                return;
+            }
+            if (_core.State == AppState.Running)
+            {
+                _core.StopAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
+            }
+            if (!_core.ShutdownAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult())
+            {
+                _core.ForceKill();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("关机时停止核心失败：" + ex.Message);
+        }
     }
 
     private async Task ShutdownAndCloseAsync()

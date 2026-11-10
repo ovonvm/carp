@@ -21,7 +21,14 @@
     <SelfContained Condition="'$(RuntimeIdentifier)' != ''">true</SelfContained>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <DebugType>none</DebugType>
+    <!-- exe / 窗口 / 托盘共用一套图标（由 web/public/favicon.svg 转出的多尺寸 .ico）。 -->
+    <ApplicationIcon>Assets\Carp-running.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Carp-running.ico" />
+    <Resource Include="Assets\Carp-idle.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- WinForms 只为 FolderBrowserDialog 引入；去掉它的全局 using，避免

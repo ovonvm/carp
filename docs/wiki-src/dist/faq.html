@@ -97,11 +97,13 @@
 <table><thead><tr><th>问题</th><th>说明</th></tr></thead><tbody>
 <tr><td>内存占用多大</td><td>按低配置档设计运行在 512MB 级；实际取决于并发与预览</td></tr>
 <tr><td>Linux 怎么升级</td><td><code>sudo carp upgrade --binary &lt;新二进制&gt;</code>（自动备份、失败回滚），详见 07</td></tr>
-<tr><td>Windows 怎么升级</td><td>面板「停止」→ 关闭面板 → 用新的 <code>Carp.exe</code> 覆盖旧文件 → 双击启动；数据、<code>core\</code>、<code>logs\</code> 不受影响</td></tr>
+<tr><td>Windows 怎么升级</td><td>托盘右键「退出」（先停服务再退出核心）→ 用新的 <code>Carp.exe</code> 覆盖旧文件 → 双击启动；数据、<code>conf\</code>、<code>core\</code> 不受影响</td></tr>
 <tr><td>怎么卸载</td><td>Linux <code>sudo carp uninstall</code>（会删数据，谨慎）；Windows 没有安装程序，删掉 <code>Carp.exe</code> 所在文件夹即可（<code>data\</code>、<code>conf\</code> 一并删除，会丢数据）</td></tr>
 <tr><td>支持 Docker / 多节点 / 对象存储吗</td><td>不支持，当前只提供单机单实例部署</td></tr>
 <tr><td>有手机 App / WebDAV 吗</td><td>没有；手机可直接用浏览器访问</td></tr>
 <tr><td>日志在哪</td><td>Linux <code>journalctl -u carp</code>；Windows 面板下方「运行日志」/ <code>conf\logs\gui-YYYYMMDD.log</code></td></tr>
+<tr><td>关窗口后服务没停，怎么彻底退出</td><td>这是设计行为：关窗口只是收进托盘，服务仍在跑。要完全退出，右键托盘图标选「退出」（会先停服务再结束进程）</td></tr>
+<tr><td>托盘里找不到 Carp 图标</td><td>任务栏右下角先点 <code>^</code> 溢出箭头；新装的图标默认在溢出区，可以拖到任务栏常驻。图标为橙色文件夹</td></tr>
 </tbody></table>
 <h2 id="179还能问谁">17.9 还能问谁</h2>
 <ul>
