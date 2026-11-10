@@ -18,6 +18,7 @@ public sealed class NativeTray : IDisposable
 {
     private const int WM_APP = 0x8000;
     private const int WM_TRAYICON = WM_APP + 21;
+    private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
     private const int WM_LBUTTONUP = 0x0202;
     private const int WM_LBUTTONDBLCLK = 0x0203;
     private const int WM_RBUTTONUP = 0x0205;
@@ -95,6 +96,7 @@ public sealed class NativeTray : IDisposable
 
     private void Register()
     {
+        _added = false;
         var data = CreateData();
         data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP;
         data.uCallbackMessage = WM_TRAYICON;
@@ -155,6 +157,12 @@ public sealed class NativeTray : IDisposable
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        if (msg == _taskbarCreated)
+        {
+            // Explorer 重启后托盘区被清空，需要重新注册图标。
+            Register();
+            return IntPtr.Zero;
+        }
         if (msg != WM_TRAYICON)
         {
             return IntPtr.Zero;
@@ -267,6 +275,9 @@ public sealed class NativeTray : IDisposable
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint RegisterWindowMessage(string name);
 
     [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
