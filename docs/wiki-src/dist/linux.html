@@ -49,7 +49,7 @@ carp             # 运维菜单</code></pre>
 <tr><td>服务地址</td><td><code>http://127.0.0.1:&lt;port&gt;</code>，默认端口 <code>50011</code></td></tr>
 <tr><td>局域网 IP</td><td>检测到的第一个局域网 IPv4 地址；一个都没有时显示「未检测到」。<strong>默认只监听本机</strong>，局域网/公网访问请配置 Nginx/Caddy 反向代理</td></tr>
 <tr><td>管理员账号</td><td>通常是 <code>admin</code></td></tr>
-<tr><td>初始密码</td><td>首次安装生成的随机密码，只显示这一次；<code>--no-credentials</code> 时该栏显示「（未显示；见下方密码文件）」</td></tr>
+<tr><td>初始密码</td><td>首次安装生成的随机密码，只显示这一次；<code>--no-credentials</code> 时显示「（未显示；见下方密码文件）」，<code>--no-service</code> 时显示「（首次手动启动后生成，见下方密码文件）」</td></tr>
 <tr><td>数据目录</td><td>默认 <code>/opt/carp/data</code></td></tr>
 <tr><td>配置文件</td><td><code>/opt/carp/carp.env</code></td></tr>
 <tr><td>密码文件</td><td><code>&lt;data&gt;/bootstrap/initial-admin.txt</code>，首次修改密码后自动删除</td></tr>
@@ -91,7 +91,7 @@ sudo carp service restart      # 重启服务</code></pre>
   <li><code>status</code> 仍只输出一行状态，例如 <code>state: active</code>。</li>
   <li><code>start</code>/<code>stop</code>/<code>restart</code> 先打印 <code>⏳ 正在… Carp 服务……</code>，成功后打印 <code>✓ …（耗时 …）</code>；启动/重启还会显示访问地址、服务状态和健康检查结果，停止会显示最终状态。</li>
   <li>失败时打印 <code>✗ …失败：…</code>，并自动附上 <code>journalctl -u carp</code> 最近 30 行；CLI 最后还会输出一行 <code>carp service: …</code> 并以非零码退出。也可手动执行 <code>sudo journalctl -u carp -n 100 --no-pager</code>。</li>
-  <li>端口会自动从 <code>&lt;prefix&gt;/carp.env</code> 的 <code>CARP_ADDR</code> 读取，改过端口也不用手工传参；读不到时才回退到 <code>50011</code>。</li>
+  <li>端口会自动从安装目录的 <code>carp.env</code>（<code>CARP_ADDR</code>）读取，改过端口也不用手工传参；非默认安装目录用 <code>CARP_PREFIX=&lt;prefix&gt;</code> 指定，读不到时才回退到 <code>50011</code>。</li>
 </ul>
 <h3 id="运维菜单">运维菜单</h3>
 <p>安装为 systemd 服务后，直接运行 <code>sudo carp</code> 打开交互菜单。状态行会显示：</p>

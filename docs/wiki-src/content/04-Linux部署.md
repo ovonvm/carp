@@ -39,7 +39,7 @@ carp             # 运维菜单
 | 服务地址 | `http://127.0.0.1:<port>`，默认端口 `50011` |
 | 局域网 IP | 检测到的第一个局域网 IPv4 地址；一个都没有时显示「未检测到」。**默认只监听本机**，局域网/公网访问请配置 Nginx/Caddy 反向代理 |
 | 管理员账号 | 通常是 `admin` |
-| 初始密码 | 首次安装生成的随机密码，只显示这一次；`--no-credentials` 时该栏显示「（未显示；见下方密码文件）」 |
+| 初始密码 | 首次安装生成的随机密码，只显示这一次；`--no-credentials` 时显示「（未显示；见下方密码文件）」，`--no-service` 时显示「（首次手动启动后生成，见下方密码文件）」 |
 | 数据目录 | 默认 `/opt/carp/data` |
 | 配置文件 | `/opt/carp/carp.env` |
 | 密码文件 | `<data>/bootstrap/initial-admin.txt`，首次修改密码后自动删除 |
@@ -96,7 +96,7 @@ sudo carp service restart      # 重启服务
 - `status` 仍只输出一行状态，例如 `state: active`。
 - `start`/`stop`/`restart` 先打印 `⏳ 正在… Carp 服务……`，成功后打印 `✓ …（耗时 …）`；启动/重启还会显示访问地址、服务状态和健康检查结果，停止会显示最终状态。
 - 失败时打印 `✗ …失败：…`，并自动附上 `journalctl -u carp` 最近 30 行；CLI 最后还会输出一行 `carp service: …` 并以非零码退出。也可手动执行 `sudo journalctl -u carp -n 100 --no-pager`。
-- 端口会自动从 `<prefix>/carp.env` 的 `CARP_ADDR` 读取，改过端口也不用手工传参；读不到时才回退到 `50011`。
+- 端口会自动从安装目录的 `carp.env`（`CARP_ADDR`）读取，改过端口也不用手工传参；非默认安装目录用 `CARP_PREFIX=<prefix>` 指定，读不到时才回退到 `50011`。
 
 ### 运维菜单
 

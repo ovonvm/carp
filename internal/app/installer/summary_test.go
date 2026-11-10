@@ -1,11 +1,29 @@
 package installer
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestPrintBoxWrapsLongLines(t *testing.T) {
+	var buf bytes.Buffer
+	opts := Options{Stdout: &buf}
+	printBox(opts, "安装完成", []string{
+		"服务方式    未安装 systemd（--no-service），手动运行 /usr/local/bin/carp serve 并且这是一段特别长的说明文字",
+	})
+	out := buf.String()
+	if !strings.Contains(out, "安装完成") {
+		t.Fatalf("missing title: %q", out)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if w := displayWidth(line); w > 80 {
+			t.Fatalf("line too wide (%d): %q", w, line)
+		}
+	}
+}
 
 func TestConfiguredPort(t *testing.T) {
 	dir := t.TempDir()

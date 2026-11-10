@@ -574,7 +574,7 @@ func printBox(opts Options, title string, lines []string) {
 	opts.printf("╔%s╗", bar)
 	opts.printf("║ %s%s ║", title, strings.Repeat(" ", width-displayWidth(title)))
 	opts.printf("╠%s╣", bar)
-	for _, line := range lines {
+	for _, line := range wrapped {
 		opts.printf("║ %s%s ║", line, strings.Repeat(" ", width-displayWidth(line)))
 	}
 	opts.printf("╚%s╝", bar)
@@ -583,9 +583,12 @@ func printBox(opts Options, title string, lines []string) {
 func displayWidth(s string) int {
 	width := 0
 	for _, r := range s {
-		if r > 0x7f {
+		switch {
+		case r >= 0x2500 && r <= 0x257f:
+			width++ // box drawing is ambiguous-width; real terminals render it as 1
+		case r > 0x7f:
 			width += 2
-		} else {
+		default:
 			width++
 		}
 	}
