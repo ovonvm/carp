@@ -37,7 +37,6 @@ public partial class MainWindow : Window
     private bool _allowClose;
     private bool _initialAdminShown;
     private bool _auroraRunning;
-    private bool _statusFlowRunning;
     private bool _tileDriftRunning;
     private readonly NativeTray _tray;
     private bool _exitRequested;
@@ -299,7 +298,6 @@ public partial class MainWindow : Window
         StatusIcon.Foreground = visual.Icon;
 
         SetAurora(state == AppState.Running);
-        SetStatusFlow(state == AppState.Running);
         SetTileDrift(state == AppState.Running);
         UpdateStatusText();
         UpdateControls();
@@ -371,30 +369,6 @@ public partial class MainWindow : Window
         {
             AuroraShift.BeginAnimation(TranslateTransform.XProperty, null);
             AuroraLayer.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    /// <summary>运行中让状态卡的边框流光（旋转的橙绿渐变垫在内容面下方 2px 处）。</summary>
-    private void SetStatusFlow(bool on)
-    {
-        if (on == _statusFlowRunning)
-        {
-            return;
-        }
-        _statusFlowRunning = on;
-        if (on)
-        {
-            StatusFlowLayer.Visibility = Visibility.Visible;
-            var spin = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(4.5))
-            {
-                RepeatBehavior = RepeatBehavior.Forever,
-            };
-            StatusFlowRotate.BeginAnimation(RotateTransform.AngleProperty, spin);
-        }
-        else
-        {
-            StatusFlowRotate.BeginAnimation(RotateTransform.AngleProperty, null);
-            StatusFlowLayer.Visibility = Visibility.Collapsed;
         }
     }
 

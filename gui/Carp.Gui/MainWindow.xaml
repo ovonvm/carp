@@ -99,34 +99,12 @@
                             </Border>
                         </Grid>
 
-                        <!-- 状态卡（运行中：边框流光 + 内部 Aurora 渐变） -->
+                        <!-- 状态卡（运行中：内部 Aurora 渐变） -->
                         <Border Grid.Row="2" Style="{StaticResource Card}" ClipToBounds="True" Padding="0">
                             <Grid>
-                                <!-- 流光边框：旋转的渐变垫在最底下，上面的内容面留出 2px 露出它 -->
-                                <Border x:Name="StatusFlowLayer" CornerRadius="10" ClipToBounds="True"
-                                        Visibility="Collapsed" IsHitTestVisible="False">
-                                    <Rectangle x:Name="StatusFlowRect" Width="1000" Height="1000"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               IsHitTestVisible="False">
-                                        <Rectangle.Fill>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <GradientStop Color="#00FF8A3C" Offset="0" />
-                                                <GradientStop Color="#FFFF8A3C" Offset="0.16" />
-                                                <GradientStop Color="#FF7ED6A2" Offset="0.40" />
-                                                <GradientStop Color="#FFFFCB56" Offset="0.62" />
-                                                <GradientStop Color="#FFFF8A3C" Offset="0.84" />
-                                                <GradientStop Color="#00FF8A3C" Offset="1" />
-                                            </LinearGradientBrush>
-                                        </Rectangle.Fill>
-                                        <Rectangle.RenderTransform>
-                                            <RotateTransform x:Name="StatusFlowRotate" CenterX="500" CenterY="500" />
-                                        </Rectangle.RenderTransform>
-                                    </Rectangle>
-                                </Border>
-
-                                <Border CornerRadius="8" Margin="2" Background="{StaticResource CardBg}">
+                                <Border CornerRadius="10" Margin="0" Background="{StaticResource CardBg}">
                                     <Grid>
-                                        <Border x:Name="AuroraLayer" CornerRadius="8" ClipToBounds="True"
+                                        <Border x:Name="AuroraLayer" CornerRadius="10" ClipToBounds="True"
                                                 Visibility="Collapsed" IsHitTestVisible="False">
                                             <Grid>
                                                 <Rectangle x:Name="AuroraRect" Width="640" Height="140"
