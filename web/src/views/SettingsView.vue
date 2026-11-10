@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { copyText } from '../lib/clipboard'
 import { messageForDeletion, messageForPasswordChange } from '../lib/errors'
@@ -7,26 +7,12 @@ import { formatDateTime } from '../lib/format'
 import { useAuthStore } from '../stores/auth'
 import { useSettingsStore } from '../stores/settings'
 import AvatarCard from '../components/AvatarCard.vue'
-import { usePreferencesStore } from '../stores/preferences'
-import { THEMES, applyTheme, currentTheme, type ThemeId } from '../lib/theme'
 import { useToast } from '../composables/useToast'
 
 const auth = useAuthStore()
 const settings = useSettingsStore()
 const router = useRouter()
 const toast = useToast()
-
-const preferences = usePreferencesStore()
-
-const themeId = ref<ThemeId>(currentTheme())
-
-function pickTheme(id: ThemeId): void {
-  applyTheme(id)
-  themeId.value = id
-  preferences.save({ theme: id }).catch(() => {
-    toast.push('主题已在本机生效，但未能同步到账号', 'error')
-  })
-}
 
 const passwordForm = reactive({ current: '', next: '', confirm: '' })
 const passwordError = ref('')
@@ -187,9 +173,6 @@ watch(deleteOpen, async (open) => {
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
-onMounted(() => {
-  void preferences.load()
-})
 </script>
 
 <template>
@@ -201,31 +184,6 @@ onMounted(() => {
 
     <div class="stack">
       <AvatarCard />
-
-      <section class="panel" aria-labelledby="appearance-title">
-        <header class="panel-head">
-          <h2 id="appearance-title" class="panel-title">外观</h2>
-          <p class="panel-hint">主题保存在账号里，换设备登录后自动跟随。</p>
-        </header>
-        <div class="theme-cards" role="radiogroup" aria-label="主题">
-          <button
-            v-for="option in THEMES"
-            :key="option.id"
-            class="theme-card sweep"
-            :class="{ 'is-selected': themeId === option.id }"
-            type="button"
-            role="radio"
-            :aria-checked="themeId === option.id"
-            @click="pickTheme(option.id)"
-          >
-            <span class="theme-card-swatch" aria-hidden="true">
-              <i v-for="color in option.colors" :key="color" :style="{ background: color }" />
-            </span>
-            <span class="theme-card-name">{{ option.name }}</span>
-            <span class="theme-card-check" aria-hidden="true">✓</span>
-          </button>
-        </div>
-      </section>
 
       <section class="panel" aria-labelledby="password-title">
         <header class="panel-head">
@@ -600,61 +558,4 @@ onMounted(() => {
   }
 }
 
-.theme-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.theme-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.theme-card:hover {
-  border-color: var(--color-border-strong);
-}
-
-.theme-card.is-selected {
-  border-color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
-
-.theme-card-swatch {
-  display: flex;
-  flex: none;
-  gap: 3px;
-}
-
-.theme-card-swatch i {
-  width: 7px;
-  height: 18px;
-  border-radius: 4px;
-}
-
-.theme-card-name {
-  flex: 1;
-  font-size: var(--fs-sm);
-  font-weight: 500;
-}
-
-.theme-card-check {
-  color: var(--color-primary);
-  font-weight: 700;
-  opacity: 0;
-}
-
-.theme-card.is-selected .theme-card-check {
-  opacity: 1;
-}
 </style>

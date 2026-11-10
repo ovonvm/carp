@@ -154,6 +154,7 @@ html[data-theme='forest'] {
   --login-hero:
     radial-gradient(120% 90% at 82% 78%, rgba(102, 187, 106, 0.2), transparent 62%),
     linear-gradient(160deg, #e8f5e9 0%, #d3ebd7 58%, #a5d6a7 100%);
+  --sweep-highlight: rgba(102, 187, 106, 0.42);
 }
 
 html[data-theme='coast'] {
@@ -197,6 +198,7 @@ html[data-theme='coast'] {
   --login-hero:
     radial-gradient(120% 90% at 82% 78%, rgba(124, 213, 199, 0.28), transparent 62%),
     linear-gradient(160deg, #f2f2ed 0%, #e4f5f2 58%, #7cd5c7 100%);
+  --sweep-highlight: rgba(17, 138, 178, 0.36);
 }
 
 html[data-theme='blossom'] {
@@ -240,6 +242,7 @@ html[data-theme='blossom'] {
   --login-hero:
     radial-gradient(120% 90% at 82% 78%, rgba(185, 178, 255, 0.3), transparent 62%),
     linear-gradient(160deg, #fff4f4 0%, #ffe3ec 55%, #e3ddff 100%);
+  --sweep-highlight: rgba(58, 134, 255, 0.3);
 }
 
 html[data-theme='dark'] {

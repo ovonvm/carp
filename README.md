@@ -79,5 +79,5 @@ docs/wiki/      用户手册（GitHub Pages 发布）
 
 ## 发布
 
-- 当前版本：`v2.2.6`（2026-11-09）
+- 当前版本：`v2.2.7`（2026-11-10）
 - Release：<https://github.com/ovonvm/carp/releases>
