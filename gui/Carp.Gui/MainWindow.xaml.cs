@@ -286,6 +286,7 @@ public partial class MainWindow : Window
         StatusIcon.Foreground = visual.Icon;
 
         SetAurora(state == AppState.Running);
+        RadarEffect.Run(TileStartStop, state == AppState.Running);
         UpdateStatusText();
         UpdateControls();
     }
@@ -316,8 +317,6 @@ public partial class MainWindow : Window
         var transition = _state is AppState.Starting or AppState.Stopping;
         var canControl = !_readOnly && !_busy && !transition;
 
-        StopButton.Content = running ? "停止" : "启动";
-        StopButton.IsEnabled = canControl;
         TileStartStop.IsEnabled = canControl;
         TileDoctor.IsEnabled = canControl;
         TileResetPassword.IsEnabled = canControl;

@@ -155,9 +155,6 @@
                                                 <TextBlock Text="打开网盘" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button x:Name="StopButton" Width="72" Height="32" Content="停止"
-                                                Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"
-                                                Click="StartStop_Click" />
                                     </StackPanel>
                                 </Grid>
                             </Grid>
