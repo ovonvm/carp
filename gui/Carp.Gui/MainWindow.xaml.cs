@@ -37,6 +37,8 @@ public partial class MainWindow : Window
     private bool _allowClose;
     private bool _initialAdminShown;
     private bool _auroraRunning;
+    private bool _statusFlowRunning;
+    private bool _tileDriftRunning;
     private bool _logPending;
     private string? _coreVersion;
     private string? _lastDetail;
@@ -286,7 +288,8 @@ public partial class MainWindow : Window
         StatusIcon.Foreground = visual.Icon;
 
         SetAurora(state == AppState.Running);
-        RadarEffect.Run(TileStartStop, state == AppState.Running);
+        SetStatusFlow(state == AppState.Running);
+        SetTileDrift(state == AppState.Running);
         UpdateStatusText();
         UpdateControls();
     }
@@ -354,6 +357,73 @@ public partial class MainWindow : Window
         {
             AuroraShift.BeginAnimation(TranslateTransform.XProperty, null);
             AuroraLayer.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    /// <summary>运行中让状态卡的边框流光（旋转的橙绿渐变垫在内容面下方 2px 处）。</summary>
+    private void SetStatusFlow(bool on)
+    {
+        if (on == _statusFlowRunning)
+        {
+            return;
+        }
+        _statusFlowRunning = on;
+        if (on)
+        {
+            StatusFlowLayer.Visibility = Visibility.Visible;
+            var spin = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(4.5))
+            {
+                RepeatBehavior = RepeatBehavior.Forever,
+            };
+            StatusFlowRotate.BeginAnimation(RotateTransform.AngleProperty, spin);
+        }
+        else
+        {
+            StatusFlowRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+            StatusFlowLayer.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    /// <summary>运行中让「启动 / 停止」卡片的底色缓慢暖流（渐变沿横向来回漂移）。</summary>
+    private void SetTileDrift(bool on)
+    {
+        if (on == _tileDriftRunning)
+        {
+            return;
+        }
+        _tileDriftRunning = on;
+        if (on)
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0.5),
+                EndPoint = new Point(1, 0.5),
+                RelativeTransform = new TranslateTransform(0, 0),
+            };
+            brush.GradientStops.Add(new GradientStop(Color.FromRgb(0xFC, 0xF7, 0xED), 0.00));
+            brush.GradientStops.Add(new GradientStop(Color.FromRgb(0xEA, 0xF7, 0xEF), 0.30));
+            brush.GradientStops.Add(new GradientStop(Color.FromRgb(0xFD, 0xF1, 0xE3), 0.55));
+            brush.GradientStops.Add(new GradientStop(Color.FromRgb(0xF2, 0xF4, 0xFF), 0.80));
+            brush.GradientStops.Add(new GradientStop(Color.FromRgb(0xFC, 0xF7, 0xED), 1.00));
+
+            if (brush.RelativeTransform is TranslateTransform shift)
+            {
+                shift.BeginAnimation(TranslateTransform.XProperty,
+                    new DoubleAnimation(0, 0.5, TimeSpan.FromSeconds(7))
+                    {
+                        AutoReverse = true,
+                        RepeatBehavior = RepeatBehavior.Forever,
+                        EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+                    });
+            }
+
+            TileStartStop.Background = brush;
+            TileStartStop.BorderBrush = new SolidColorBrush(Color.FromArgb(0x48, 0x2F, 0x9A, 0x4E));
+        }
+        else
+        {
+            TileStartStop.ClearValue(Control.BackgroundProperty);
+            TileStartStop.ClearValue(Control.BorderBrushProperty);
         }
     }
 

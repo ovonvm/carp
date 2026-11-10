@@ -98,32 +98,56 @@
                             </Border>
                         </Grid>
 
-                        <!-- 状态卡（Aurora 渐变在运行中缓慢流动） -->
+                        <!-- 状态卡（运行中：边框流光 + 内部 Aurora 渐变） -->
                         <Border Grid.Row="2" Style="{StaticResource Card}" ClipToBounds="True" Padding="0">
                             <Grid>
-                                <Border x:Name="AuroraLayer" CornerRadius="10" ClipToBounds="True"
+                                <!-- 流光边框：旋转的渐变垫在最底下，上面的内容面留出 2px 露出它 -->
+                                <Border x:Name="StatusFlowLayer" CornerRadius="10" ClipToBounds="True"
                                         Visibility="Collapsed" IsHitTestVisible="False">
-                                    <Grid>
-                                        <Rectangle x:Name="AuroraRect" Width="640" Height="140"
-                                                   HorizontalAlignment="Left" VerticalAlignment="Center"
-                                                   Opacity="0.55" IsHitTestVisible="False">
-                                            <Rectangle.Fill>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                    <GradientStop Color="#007C6CFF" Offset="0" />
-                                                    <GradientStop Color="#557C6CFF" Offset="0.28" />
-                                                    <GradientStop Color="#66A88BFF" Offset="0.5" />
-                                                    <GradientStop Color="#557C6CFF" Offset="0.72" />
-                                                    <GradientStop Color="#007C6CFF" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Rectangle.Fill>
-                                            <Rectangle.RenderTransform>
-                                                <TranslateTransform x:Name="AuroraShift" X="-280" />
-                                            </Rectangle.RenderTransform>
-                                        </Rectangle>
-                                    </Grid>
+                                    <Rectangle x:Name="StatusFlowRect" Width="1000" Height="1000"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               IsHitTestVisible="False">
+                                        <Rectangle.Fill>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                <GradientStop Color="#00FF8A3C" Offset="0" />
+                                                <GradientStop Color="#FFFF8A3C" Offset="0.16" />
+                                                <GradientStop Color="#FF7ED6A2" Offset="0.40" />
+                                                <GradientStop Color="#FFFFCB56" Offset="0.62" />
+                                                <GradientStop Color="#FFFF8A3C" Offset="0.84" />
+                                                <GradientStop Color="#00FF8A3C" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Rectangle.Fill>
+                                        <Rectangle.RenderTransform>
+                                            <RotateTransform x:Name="StatusFlowRotate" CenterX="500" CenterY="500" />
+                                        </Rectangle.RenderTransform>
+                                    </Rectangle>
                                 </Border>
 
-                                <Grid Margin="16,0,14,0">
+                                <Border CornerRadius="8" Margin="2" Background="{StaticResource CardBg}">
+                                    <Grid>
+                                        <Border x:Name="AuroraLayer" CornerRadius="8" ClipToBounds="True"
+                                                Visibility="Collapsed" IsHitTestVisible="False">
+                                            <Grid>
+                                                <Rectangle x:Name="AuroraRect" Width="640" Height="140"
+                                                           HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                           Opacity="0.55" IsHitTestVisible="False">
+                                                    <Rectangle.Fill>
+                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                            <GradientStop Color="#007C6CFF" Offset="0" />
+                                                            <GradientStop Color="#557C6CFF" Offset="0.28" />
+                                                            <GradientStop Color="#66A88BFF" Offset="0.5" />
+                                                            <GradientStop Color="#557C6CFF" Offset="0.72" />
+                                                            <GradientStop Color="#007C6CFF" Offset="1" />
+                                                        </LinearGradientBrush>
+                                                    </Rectangle.Fill>
+                                                    <Rectangle.RenderTransform>
+                                                        <TranslateTransform x:Name="AuroraShift" X="-280" />
+                                                    </Rectangle.RenderTransform>
+                                                </Rectangle>
+                                            </Grid>
+                                        </Border>
+
+                                        <Grid Margin="16,0,14,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
@@ -157,6 +181,8 @@
                                         </Button>
                                     </StackPanel>
                                 </Grid>
+                                    </Grid>
+                                </Border>
                             </Grid>
                         </Border>
 
