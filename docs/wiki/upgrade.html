@@ -75,10 +75,10 @@ sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011</code><
 sudo /opt/carp/scripts/restore.sh --snapshot &lt;时间戳&gt; --drill</code></pre>
 <p>演练会把快照解到临时目录并校验，不会覆盖正在运行的数据；建议每次备份后抽一次演练。</p>
 <h3 id="正式恢复">正式恢复</h3>
-<pre><code class="language-bash">sudo carp service stop
+<pre><code class="language-bash">sudo systemctl stop carp
 sudo /opt/carp/scripts/restore.sh --snapshot &lt;时间戳&gt; --apply --yes
-sudo carp service start</code></pre>
-<p>恢复会覆盖数据目录，务必确认快照时间戳。Windows 恢复：停止服务 → 解压备份 zip → 用其中内容替换 <code>%ProgramData%\Carp\data</code> → 启动服务。</p>
+sudo systemctl start carp</code></pre>
+<p>也可以把前后的 <code>systemctl</code> 换成 <code>carp service stop/start</code>，它会打印进度和结果；失败时按输出附带的 <code>journalctl -u carp</code> 最近日志排查。恢复会覆盖数据目录，务必确认快照时间戳。Windows 恢复：停止服务 → 解压备份 zip → 用其中内容替换 <code>%ProgramData%\Carp\data</code> → 启动服务。</p>
 <h2 id="75迁移数据目录换机器">7.5 迁移数据目录 / 换机器</h2>
 <p><strong>Linux</strong>：停止服务 → 用 <code>rsync -a</code> 复制 <code>data/</code> 到新位置 → 修改 <code>CARP_DATA_DIR</code>（或 <code>carp config</code>）→ 启动 → <code>carp doctor</code> 复核。注意属主要改成运行用户。</p>
 <p><strong>Windows</strong>：控制面板「高级 → 更改数据目录」，只能选择空目录；程序会停止服务、复制数据、保存配置并重启。</p>

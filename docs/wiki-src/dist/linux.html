@@ -39,12 +39,38 @@ sudo ./install.sh</code></pre>
 <tr><td><code>--data &lt;dir&gt;</code></td><td>数据目录</td><td><code>&lt;prefix&gt;/data</code></td></tr>
 <tr><td><code>--no-service</code></td><td>只复制文件，不注册 systemd</td><td>关</td></tr>
 <tr><td><code>--dry-run</code></td><td>只打印将要做什么（可不用 root）</td><td>关</td></tr>
-<tr><td><code>--no-credentials</code></td><td>安装摘要中不打印初始管理员密码</td><td>关</td></tr>
+<tr><td><code>--no-credentials</code></td><td>安装完成信息框中不打印初始管理员密码</td><td>关</td></tr>
 </tbody></table>
 <p>安装完成后：</p>
 <pre><code class="language-bash">carp doctor      # 自检
 carp             # 运维菜单</code></pre>
-<p>安装摘要里会显示访问地址、数据目录、配置文件和 <code>admin</code> 的初始密码；密码同时写入 <code>&lt;data&gt;/bootstrap/initial-admin.txt</code>，首次修改密码后自动删除。</p>
+<p>安装完成后，终端会打印一个「Carp 安装完成」信息框，字段如下（密码只显示这一次）：</p>
+<table><thead><tr><th>字段</th><th>内容</th></tr></thead><tbody>
+<tr><td>服务地址</td><td><code>http://127.0.0.1:&lt;port&gt;</code>，默认端口 <code>50011</code></td></tr>
+<tr><td>局域网 IP</td><td>检测到的第一个局域网 IPv4 地址；一个都没有时显示「未检测到」。<strong>默认只监听本机</strong>，局域网/公网访问请配置 Nginx/Caddy 反向代理</td></tr>
+<tr><td>管理员账号</td><td>通常是 <code>admin</code></td></tr>
+<tr><td>初始密码</td><td>首次安装生成的随机密码，只显示这一次；<code>--no-credentials</code> 时该栏显示「（未显示；见下方密码文件）」</td></tr>
+<tr><td>数据目录</td><td>默认 <code>/opt/carp/data</code></td></tr>
+<tr><td>配置文件</td><td><code>/opt/carp/carp.env</code></td></tr>
+<tr><td>密码文件</td><td><code>&lt;data&gt;/bootstrap/initial-admin.txt</code>，首次修改密码后自动删除</td></tr>
+<tr><td>服务状态</td><td>systemd 状态和健康检查结果（例如 <code>active（健康检查 OK）</code>）；安装时用了 <code>--no-service</code> 则改为「服务方式」一行，提示未安装 systemd、需手动运行 <code>/usr/local/bin/carp serve</code></td></tr>
+</tbody></table>
+<p>信息框下方还会提示首次登录后立即修改密码，并列出下一步：<code>carp doctor</code>、<code>carp</code>（运维菜单）、<code>systemctl status carp</code>。</p>
+<blockquote><p><code>--no-credentials</code> 只隐藏密码本身，信息框的其它字段仍会打印；服务正常启动时密码仍写入上述密码文件。<code>--dry-run</code> 只打印安装计划，不执行安装，也不会出现这个信息框。<code>--no-service</code> 不启动服务，初始密码要等首次手动运行 <code>/usr/local/bin/carp serve</code> 时才生成，信息框会提示稍后查看密码文件。</p></blockquote>
+<p>字段示例（IP、密码和状态随环境不同）：</p>
+<pre><code class="language-text">╔════════════════════════════════════════════════════════════════════════╗
+║ Carp 安装完成                                                          ║
+╠════════════════════════════════════════════════════════════════════════╣
+║ 服务地址    http://127.0.0.1:50011                                     ║
+║ 局域网 IP   192.168.1.10（默认仅本机监听；局域网/公网请配 nginx 反代） ║
+║ 管理员账号  admin                                                      ║
+║ 初始密码    A1b2C3d4E5                                                 ║
+║ 数据目录    /opt/carp/data                                             ║
+║ 配置文件    /opt/carp/carp.env                                         ║
+║ 密码文件    /opt/carp/data/bootstrap/initial-admin.txt                 ║
+║ 服务状态    active（健康检查 OK）                                      ║
+╚════════════════════════════════════════════════════════════════════════╝</code></pre>
+<blockquote><p>边框宽度会按内容自适应，上例只示意字段；实际对齐以终端输出为准（<code>局域网 IP</code> 较长时框会更宽）。</p></blockquote>
 <h2 id="42便携方式">4.2 便携方式</h2>
 <pre><code class="language-bash">chmod +x carp
 ./carp serve</code></pre>
@@ -55,6 +81,23 @@ carp             # 运维菜单</code></pre>
   <li>适合临时试用，或放进自己的进程管理器（如 supervisord）里托管。</li>
 </ul>
 <h2 id="43服务管理">4.3 服务管理</h2>
+<p>安装后可以用 <code>carp service</code> 或 <code>carp</code> 运维菜单管理服务；启动/停止/重启都会显示进度和结果。</p>
+<h3 id="命令行">命令行</h3>
+<pre><code class="language-bash">sudo carp service status       # 只打印状态词
+sudo carp service start        # 启动
+sudo carp service stop         # 停止
+sudo carp service restart      # 重启服务</code></pre>
+<ul>
+  <li><code>status</code> 仍只输出一行状态，例如 <code>state: active</code>。</li>
+  <li><code>start</code>/<code>stop</code>/<code>restart</code> 先打印 <code>⏳ 正在… Carp 服务……</code>，成功后打印 <code>✓ …（耗时 …）</code>；启动/重启还会显示访问地址、服务状态和健康检查结果，停止会显示最终状态。</li>
+  <li>失败时打印 <code>✗ …失败：…</code>，并自动附上 <code>journalctl -u carp</code> 最近 30 行；CLI 最后还会输出一行 <code>carp service: …</code> 并以非零码退出。也可手动执行 <code>sudo journalctl -u carp -n 100 --no-pager</code>。</li>
+  <li>端口会自动从 <code>&lt;prefix&gt;/carp.env</code> 的 <code>CARP_ADDR</code> 读取，改过端口也不用手工传参；读不到时才回退到 <code>50011</code>。</li>
+</ul>
+<h3 id="运维菜单">运维菜单</h3>
+<p>安装为 systemd 服务后，直接运行 <code>sudo carp</code> 打开交互菜单。状态行会显示：</p>
+<pre><code class="language-text">服务状态：active   健康检查：OK   地址：http://127.0.0.1:50011   管理员：admin</code></pre>
+<p>输入 <code>1</code>/<code>2</code>/<code>3</code>（启动/停止/重启）后同样先显示 <code>⏳ 正在…</code>，再显示 <code>✓ …（耗时 …）</code> 或 <code>✗ …</code> + 最近日志，不再静默返回。菜单里的失败以 <code>✗</code> 后面的错误和日志为准。</p>
+<h3 id="systemctl等价命令">systemctl 等价命令</h3>
 <pre><code class="language-bash">sudo systemctl status carp     # 查看状态
 sudo systemctl restart carp    # 重启（改配置后）
 sudo systemctl stop carp       # 停止
@@ -77,8 +120,9 @@ sudo systemctl enable --now carp</code></pre>
 <h2 id="45常用运维命令">4.5 常用运维命令</h2>
 <table><thead><tr><th>目的</th><th>命令</th></tr></thead><tbody>
 <tr><td>自检</td><td><code>sudo carp doctor</code></td></tr>
-<tr><td>交互菜单</td><td><code>sudo carp</code></td></tr>
-<tr><td>修改地址/端口</td><td><code>sudo carp config</code>（改完 <code>sudo carp service restart</code>）</td></tr>
+<tr><td>交互菜单</td><td><code>sudo carp</code>（状态行显示访问地址）</td></tr>
+<tr><td>启动/停止/重启</td><td><code>sudo carp service start</code> / <code>stop</code> / <code>restart</code>（或对应 <code>systemctl</code>）</td></tr>
+<tr><td>修改地址/端口</td><td><code>sudo carp config</code>（改完 <code>sudo systemctl restart carp</code>；<code>carp service</code> 会自动读取新端口）</td></tr>
 <tr><td>备份</td><td><code>sudo /opt/carp/scripts/backup.sh</code></td></tr>
 <tr><td>恢复演练</td><td><code>sudo /opt/carp/scripts/restore.sh --list</code></td></tr>
 <tr><td>升级</td><td><code>sudo carp upgrade --binary &lt;新二进制&gt;</code></td></tr>
@@ -96,7 +140,7 @@ sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011</code><
     </article>
     <div class="pager"><a class="pn prev" href="windows.html"><span>上一篇</span>3. Windows 部署</a><a class="pn next" href="proxy.html"><span>下一篇</span>5. 反向代理与 HTTPS</a></div>
   </main>
-  <aside class="toc"><div class="toc-title">本页目录</div><a class="toc-l2" href="#41安装包方式推荐">4.1 安装包方式（推荐）</a><a class="toc-l2" href="#42便携方式">4.2 便携方式</a><a class="toc-l2" href="#43服务管理">4.3 服务管理</a><a class="toc-l2" href="#44目录与权限">4.4 目录与权限</a><a class="toc-l2" href="#45常用运维命令">4.5 常用运维命令</a><a class="toc-l2" href="#46升级">4.6 升级</a><a class="toc-l2" href="#47卸载">4.7 卸载</a></aside>
+  <aside class="toc"><div class="toc-title">本页目录</div><a class="toc-l2" href="#41安装包方式推荐">4.1 安装包方式（推荐）</a><a class="toc-l2" href="#42便携方式">4.2 便携方式</a><a class="toc-l2" href="#43服务管理">4.3 服务管理</a><a class="toc-l3" href="#命令行">命令行</a><a class="toc-l3" href="#运维菜单">运维菜单</a><a class="toc-l3" href="#systemctl等价命令">systemctl 等价命令</a><a class="toc-l2" href="#44目录与权限">4.4 目录与权限</a><a class="toc-l2" href="#45常用运维命令">4.5 常用运维命令</a><a class="toc-l2" href="#46升级">4.6 升级</a><a class="toc-l2" href="#47卸载">4.7 卸载</a></aside>
 </div>
 <script src="assets/search-index.js"></script>
 <script src="assets/app.js"></script>

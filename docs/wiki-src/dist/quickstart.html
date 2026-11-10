@@ -42,11 +42,12 @@ sudo ./install.sh</code></pre>
 <ol>
   <li>把程序放到 <code>/opt/carp/carp</code>，创建受限系统用户 <code>carp</code> 运行它；</li>
   <li>生成 <code>/opt/carp/carp.env</code>（配置文件）并注册 systemd 服务；</li>
-  <li>启动服务并等待健康检查通过，最后打印访问地址、数据目录和 <strong>管理员初始密码</strong>。</li>
+  <li>启动服务并等待健康检查通过，最后打印「Carp 安装完成」信息框：服务地址、局域网 IP、管理员账号、<strong>初始密码</strong>（只显示这一次）、数据目录、配置文件、密码文件和本次服务状态；用 <code>--no-credentials</code> 安装时只隐藏密码本身。</li>
 </ol>
 <p>之后执行：</p>
 <pre><code class="language-bash">carp doctor      # 自检，全绿即可
 carp             # 打开运维菜单（启动/停止/备份/升级等）</code></pre>
+<p>运维菜单的状态行会显示访问地址；菜单里的 <code>1</code>/<code>2</code>/<code>3</code>（启动/停止/重启）会显示进度和结果，不再静默返回。</p>
 <h2 id="13windows控制面板方式">1.3 Windows：控制面板方式</h2>
 <ol>
   <li>把 <code>Carp.exe</code> 放到一个单独文件夹（不要放在中文或很深的路径下）。</li>

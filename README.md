@@ -37,14 +37,14 @@ sudo ./install.sh
 ./carp serve
 ```
 
-安装完成后会打印访问地址、数据目录和管理员初始密码。默认只监听 `127.0.0.1:50011`，外部访问请参考手册配置 Nginx/Caddy 反向代理。
+安装完成后会打印「Carp 安装完成」信息框：服务地址、局域网 IP、管理员账号、初始密码（只显示一次）、数据目录、配置文件、密码文件和本次服务状态；`--no-credentials` 时不显示密码本身。默认只监听 `127.0.0.1:50011`，外部访问请参考手册配置 Nginx/Caddy 反向代理。
 
 ## 数据与配置
 
 - 数据目录默认是 `<可执行文件目录>/data`（Windows 面板为 `%ProgramData%\Carp\data`）。
 - 初始管理员密码保存在 `<data>/bootstrap/initial-admin.txt`；修改密码后该文件自动删除。
 - 主要配置项（flag 或环境变量，`CARP_` 前缀）：`-addr`/`CARP_ADDR`、`-data`/`CARP_DATA_DIR`、`-profile`/`CARP_PROFILE`、`-cookie-secure`/`CARP_COOKIE_SECURE`、`CARP_ALLOW_ORIGINS`；离线下载需要 `CARP_QB_URL`、`CARP_QB_USERNAME`、`CARP_QB_PASSWORD`。
-- Linux 安装后可运行 `carp` 打开运维菜单（服务、doctor、日志、备份、升级、重置管理员密码、卸载）。
+- Linux 安装后可运行 `carp` 打开运维菜单（状态行显示访问地址；启停会显示进度与结果；另有 doctor、日志、备份、升级、重置管理员密码、卸载）。
 
 ## 构建
 

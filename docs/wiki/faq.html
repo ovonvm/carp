@@ -28,15 +28,17 @@
       <h2 id="171安装与启动">17.1 安装与启动</h2>
 <p><strong>网页打不开</strong></p>
 <ol>
-  <li>确认服务在跑：<code>curl http://127.0.0.1:50011/health</code>（Linux 用 <code>carp service status</code> 或 <code>systemctl status carp</code>）。</li>
+  <li>确认服务在跑：<code>curl http://127.0.0.1:50011/health</code>（Linux 用 <code>sudo carp service status</code> 或 <code>systemctl status carp</code>）。</li>
   <li>默认只监听 <code>127.0.0.1:50011</code>，<strong>其它电脑通过局域网打不开是正常的</strong>：请通过反向代理对外，或把监听地址改为 <code>0.0.0.0:50011</code>。</li>
   <li>端口被占用时改端口（<code>CARP_ADDR</code> 或启动参数），注意防火墙放行。</li>
   <li>看日志：Linux <code>journalctl -u carp -n 100</code>；Windows 控制面板「查看日志」或数据目录下 <code>logs/carp.log</code>。</li>
   <li>用 <code>carp doctor</code>（Windows 控制面板「诊断」）检查数据目录、端口、数据库。</li>
 </ol>
+<p><strong>启动/停止/重启没有反应或失败</strong></p>
+<p>新版会在终端显示 <code>⏳ 正在…</code> 和 <code>✓</code>/<code>✗</code>。看到 <code>✗</code> 时先读紧跟其后的「最近日志（journalctl -u carp）」，也可以手动执行 <code>sudo journalctl -u carp -n 100 --no-pager</code>。常见原因：没用 <code>sudo</code>、端口被占用、<code>carp.env</code> 写错。</p>
 <p><strong>安装后提示没有管理员 / 忘记初始密码</strong></p>
 <ul>
-  <li>Linux：初始密码在安装摘要里，也在 <code>&lt;data&gt;/bootstrap/initial-admin.txt</code>（首次改密后删除）。丢了可执行 <code>sudo carp reset-admin-password</code>。</li>
+  <li>Linux：初始密码在安装完成信息框里，也在 <code>&lt;data&gt;/bootstrap/initial-admin.txt</code>（首次改密后删除）。丢了可执行 <code>sudo carp reset-admin-password</code>。</li>
   <li>Windows：首次启动弹窗会显示一次初始密码；忘记可用控制面板「重置密码」。</li>
   <li>实在无法进入：说明有另一个管理员账号，用它登录后在「用户管理」中重置。</li>
 </ul>

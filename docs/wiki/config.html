@@ -28,7 +28,7 @@
       <p>Carp 没有 TOML/YAML/JSON 格式的「配置文件」。运行参数只有一个来源：<strong>命令行参数 &gt; 环境变量 &gt; 内置默认值</strong>。安装包在 Linux 上额外生成一个 <code>carp.env</code>，它本质上就是一组环境变量。</p>
 <h2 id="61配置放在哪">6.1 配置放在哪</h2>
 <table><thead><tr><th>平台 / 方式</th><th>配置位置</th><th>修改方式</th></tr></thead><tbody>
-<tr><td>Linux 安装包</td><td><code>/opt/carp/carp.env</code>（0600，systemd 通过 EnvironmentFile 读取）</td><td><code>sudo carp config</code> 或直接编辑，再 <code>sudo carp service restart</code></td></tr>
+<tr><td>Linux 安装包</td><td><code>/opt/carp/carp.env</code>（0600，systemd 通过 EnvironmentFile 读取）</td><td><code>sudo carp config</code> 或直接编辑，再 <code>sudo systemctl restart carp</code></td></tr>
 <tr><td>Linux 便携</td><td>无文件；启动参数 / 当前 shell 的环境变量</td><td><code>./carp serve -addr ... -data ...</code> 或 <code>export CARP_...</code></td></tr>
 <tr><td>Windows 控制面板</td><td><code>%ProgramData%\Carp\gui-config.json</code>（端口、数据目录、自启等）</td><td>控制面板「高级」页修改后点「保存并重启」</td></tr>
 </tbody></table>
@@ -63,14 +63,14 @@ CARP_COOKIE_SECURE=auto
 <pre><code class="language-bash">sudo carp config --show</code></pre>
 <p>交互式修改常用项（监听地址、数据目录、profile、cookie-secure）：</p>
 <pre><code class="language-bash">sudo carp config
-sudo carp service restart</code></pre>
+sudo systemctl restart carp</code></pre>
 <h2 id="64哪些改动需要重启">6.4 哪些改动需要重启</h2>
 <table><thead><tr><th>改动</th><th>是否要重启</th></tr></thead><tbody>
 <tr><td>监听地址、端口、数据目录、profile、cookie-secure、worker、qB 连接</td><td>需要重启服务</td></tr>
 <tr><td>站点设置（站点名、是否允许注册/注销、默认配额）</td><td>保存即生效，不需要重启</td></tr>
 <tr><td>存储策略（管理后台 → 存储）</td><td>保存即生效</td></tr>
 </tbody></table>
-<p>Linux 重启：<code>sudo carp service restart</code>；Windows：控制面板「保存并重启」。</p>
+<p>Linux 重启：<code>sudo systemctl restart carp</code>（<code>carp service restart</code> 会自动读取 <code>carp.env</code> 里的端口）；Windows：控制面板「保存并重启」。</p>
 <h2 id="65windows控制面板配置">6.5 Windows 控制面板配置</h2>
 <p><code>gui-config.json</code> 由控制面板维护，一般不需要手工编辑。它保存：监听端口、数据目录、内存 profile、日志级别、Cookie 安全策略、是否开机自启。修改端口或数据目录请走「高级」页，程序会自动重启核心并做健康检查。</p>
 <h2 id="66命令行与服务的一致性">6.6 命令行与服务的一致性</h2>

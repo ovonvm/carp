@@ -55,7 +55,7 @@ func Run(ctx context.Context, opts Options) int {
 		if installed {
 			state := installer.ServiceStatus()
 			health := healthLine(opts.Port)
-			fmt.Fprintf(opts.Out, "服务状态：%s   健康检查：%s   管理员：admin\n", state, health)
+			fmt.Fprintf(opts.Out, "服务状态：%s   健康检查：%s   地址：http://127.0.0.1:%s   管理员：admin\n", state, health, opts.Port)
 		} else {
 			fmt.Fprintf(opts.Out, "便携模式：二进制 %s；数据目录 %s\n", filepath.Join(opts.Prefix, "carp"), dataDir(opts))
 		}
@@ -82,19 +82,19 @@ func Run(ctx context.Context, opts Options) int {
 			return 0
 		case "1":
 			if installed {
-				err = installer.Service("start")
+				_ = installer.ServiceAction("start", opts.Port, opts.Out)
 			} else {
 				return runServeForeground(opts)
 			}
 		case "2":
 			if installed {
-				err = installer.Service("stop")
+				_ = installer.ServiceAction("stop", opts.Port, opts.Out)
 			} else {
 				err = doctorCmd(opts)
 			}
 		case "3":
 			if installed {
-				err = installer.Service("restart")
+				_ = installer.ServiceAction("restart", opts.Port, opts.Out)
 			} else {
 				err = runScript(opts, "backup.sh")
 			}
@@ -328,16 +328,22 @@ func resetAdminCmd(opts Options, root bool, scanner *bufio.Scanner) error {
 	if len(pw) < 8 {
 		return fmt.Errorf("密码至少 8 位")
 	}
-	_ = installer.Service("stop")
+	if err := installer.ServiceAction("stop", opts.Port, opts.Out); err != nil {
+		return fmt.Errorf("停止服务失败：%v", err)
+	}
 	var out bytes.Buffer
 	cmd := exec.Command("runuser", "-u", opts.User, "--",
 		binaryPath(opts), "reset-admin-password", "-data", dataDir(opts), "-username", username, "-password-stdin")
 	cmd.Stdin = strings.NewReader(pw + "\n")
 	cmd.Stdout, cmd.Stderr = &out, &out
 	err := cmd.Run()
-	_ = installer.Service("start")
+	startErr := installer.ServiceAction("start", opts.Port, opts.Out)
 	if err != nil {
+		_ = startErr
 		return fmt.Errorf("重置失败：%v\n%s", err, out.String())
+	}
+	if startErr != nil {
+		return fmt.Errorf("密码已重置，但服务启动失败：%v", startErr)
 	}
 	fmt.Fprintf(opts.Out, "已重置 %s 的密码并撤销所有会话；服务已重启\n", username)
 	return nil

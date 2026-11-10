@@ -36,7 +36,7 @@
 <h2 id="82第一次登录管理员">8.2 第一次登录（管理员）</h2>
 <ul>
   <li>安装或首次启动时程序自动创建管理员 <code>admin</code>。</li>
-  <li>初始密码只显示一次：Linux 安装摘要 / 首次前台启动的控制台输出；Windows 控制面板弹窗；同时写入数据目录的 <code>bootstrap/initial-admin.txt</code>。</li>
+  <li>初始密码只显示一次：Linux 安装完成信息框 / 首次前台启动的控制台输出；Windows 控制面板弹窗；同时写入数据目录的 <code>bootstrap/initial-admin.txt</code>。<code>carp install --no-credentials</code> 时不显示密码本身，只提示密码文件位置。</li>
   <li>首次登录后请立刻到「设置 → 修改密码」。修改后初始密码文件会被删除，其它设备上的旧会话也会失效。</li>
   <li>忘记密码：Linux <code>sudo carp reset-admin-password</code>；Windows 控制面板「高级 → 重置管理员密码」。重置会撤销该用户全部会话。</li>
 </ul>

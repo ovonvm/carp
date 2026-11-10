@@ -106,12 +106,18 @@ func runServiceCLI(args []string) int {
 		fmt.Fprintln(os.Stderr, "usage: carp service status|start|stop|restart")
 		return 2
 	}
-	if err := installer.Service(args[0]); err != nil {
-		fmt.Fprintf(os.Stderr, "carp service: %v\n", err)
-		return 1
-	}
 	if args[0] == "status" {
 		fmt.Println("state:", installer.ServiceStatus())
+		return 0
+	}
+	prefix := os.Getenv("CARP_PREFIX")
+	if prefix == "" {
+		prefix = "/opt/carp"
+	}
+	port := installer.ConfiguredPort(prefix)
+	if err := installer.ServiceAction(args[0], port, os.Stdout); err != nil {
+		fmt.Fprintf(os.Stderr, "carp service: %v\n", err)
+		return 1
 	}
 	return 0
 }
@@ -216,6 +222,9 @@ func runMenuCLI(args []string) int {
 		return 2
 	}
 	opts := installerOptionsFromFlags(flags)
+	if flags["port"] == "" {
+		opts.Port = installer.ConfiguredPort(opts.Prefix)
+	}
 	return menu.Run(context.Background(), menu.Options{
 		Prefix:  opts.Prefix,
 		User:    opts.User,

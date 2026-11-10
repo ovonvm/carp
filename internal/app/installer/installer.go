@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -230,24 +231,7 @@ func Install(ctx context.Context, opts Options) (Credentials, error) {
 		creds = parseCredentials(string(data), filepath.Join(opts.DataDir, "bootstrap", "initial-admin.txt"))
 	}
 
-	opts.printf("")
-	opts.printf("installed:")
-	opts.printf("  address:   http://%s", opts.addr())
-	opts.printf("  data dir:  %s", opts.DataDir)
-	opts.printf("  config:    %s", opts.envPath())
-	opts.printf("  command:   /usr/local/bin/carp")
-	if creds.Username != "" && !opts.NoCredentials {
-		opts.printf("  admin:     %s / %s", creds.Username, creds.Password)
-		opts.printf("             (also in %s; it is removed after the first password change)", creds.FilePath)
-	} else if opts.NoCredentials {
-		opts.printf("  admin:     %s (initial password in %s; not printed because --no-credentials)", "admin",
-			filepath.Join(opts.DataDir, "bootstrap", "initial-admin.txt"))
-	} else {
-		opts.printf("  admin:     admin (initial password file not found; check %s)",
-			filepath.Join(opts.DataDir, "bootstrap", "initial-admin.txt"))
-	}
-	opts.printf("")
-	opts.printf("next: carp doctor && carp (interactive menu)")
+	printInstallSummary(opts, creds)
 	return creds, nil
 }
 
@@ -348,6 +332,21 @@ CARP_DATA_DIR=%s
 CARP_PROFILE=low
 CARP_COOKIE_SECURE=auto
 `, opts.addr(), opts.DataDir)
+}
+
+// ConfiguredPort returns the port configured in <prefix>/carp.env, or 50011.
+func ConfiguredPort(prefix string) string {
+	data, err := os.ReadFile(filepath.Join(prefix, "carp.env"))
+	if err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if v, ok := strings.CutPrefix(strings.TrimSpace(line), "CARP_ADDR="); ok {
+				if _, port, err := net.SplitHostPort(strings.TrimSpace(v)); err == nil && port != "" {
+					return port
+				}
+			}
+		}
+	}
+	return "50011"
 }
 
 // ConfigShow prints the current environment file.
@@ -455,6 +454,217 @@ func systemctl(args ...string) error {
 		return fmt.Errorf("systemctl %s: %s", strings.Join(args, " "), strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+// ServiceAction runs a lifecycle action and prints human readable progress and
+// the resulting state, including the health check and a journal tail on error.
+func ServiceAction(action, port string, out io.Writer) error {
+	if out == nil {
+		out = os.Stdout
+	}
+	if port == "" {
+		port = "50011"
+	}
+	label, ok := map[string]string{"start": "启动", "stop": "停止", "restart": "重启"}[action]
+	if !ok {
+		fmt.Fprintf(out, "✗ 未知服务操作：%s（可用：start/stop/restart）\n", action)
+		return fmt.Errorf("service: unknown action %q", action)
+	}
+	started := time.Now()
+	fmt.Fprintf(out, "⏳ 正在%s Carp 服务……\n", label)
+	if err := Service(action); err != nil {
+		fmt.Fprintf(out, "✗ %s失败：%v\n", label, err)
+		journalTail(out, 30)
+		return err
+	}
+	switch action {
+	case "start", "restart":
+		if err := WaitHealthy("127.0.0.1:"+port, 20*time.Second); err != nil {
+			fmt.Fprintf(out, "✗ 服务进程已启动，但健康检查未通过：%v\n", err)
+			journalTail(out, 30)
+			return err
+		}
+		fmt.Fprintf(out, "✓ 服务已%s（耗时 %s）\n", label, time.Since(started).Round(time.Millisecond))
+		fmt.Fprintf(out, "  访问地址：http://127.0.0.1:%s\n", port)
+		fmt.Fprintf(out, "  服务状态：%s    健康检查：OK\n", ServiceStatus())
+	case "stop":
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			state := ServiceStatus()
+			if state == "inactive" || state == "failed" {
+				fmt.Fprintf(out, "✓ 服务已停止（状态：%s，耗时 %s）\n", state, time.Since(started).Round(time.Millisecond))
+				return nil
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		state := ServiceStatus()
+		fmt.Fprintf(out, "✗ 停止超时，当前状态：%s\n", state)
+		journalTail(out, 30)
+		return fmt.Errorf("service stop timed out (state %s)", state)
+	}
+	return nil
+}
+
+// WaitHealthy waits until /health answers 200 or the timeout expires.
+func WaitHealthy(addr string, timeout time.Duration) error {
+	return waitHealthy(context.Background(), addr, timeout)
+}
+
+func journalTail(out io.Writer, lines int) {
+	fmt.Fprintln(out, "\n--- 最近日志（journalctl -u carp）---")
+	cmd := exec.Command("journalctl", "-u", "carp", "-n", strconv.Itoa(lines), "--no-pager")
+	cmd.Stdout, cmd.Stderr = out, out
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(out, "（无法读取 journal：%v；可运行 systemctl status carp 查看）\n", err)
+	}
+}
+
+func printInstallSummary(opts Options, creds Credentials) {
+	user, pass := creds.Username, creds.Password
+	if user == "" {
+		user = "admin"
+	}
+	switch {
+	case opts.NoCredentials:
+		pass = "（未显示；见下方密码文件）"
+	case pass != "":
+		// keep the generated one-time password
+	case opts.NoService:
+		pass = "（首次手动启动后生成，见下方密码文件）"
+	default:
+		pass = "（未读取到；密码文件可能已被删除或尚未生成）"
+	}
+	lines := []string{
+		fmt.Sprintf("服务地址    http://127.0.0.1:%s", opts.Port),
+		fmt.Sprintf("局域网 IP   %s（默认仅本机监听；局域网/公网请配 nginx 反代）", lanIPv4()),
+		fmt.Sprintf("管理员账号  %s", user),
+		fmt.Sprintf("初始密码    %s", pass),
+		fmt.Sprintf("数据目录    %s", opts.DataDir),
+		fmt.Sprintf("配置文件    %s", opts.envPath()),
+		fmt.Sprintf("密码文件    %s", filepath.Join(opts.DataDir, "bootstrap", "initial-admin.txt")),
+	}
+	if opts.NoService {
+		lines = append(lines, "服务方式    未安装 systemd（--no-service），手动运行 /usr/local/bin/carp serve")
+	} else {
+		lines = append(lines, fmt.Sprintf("服务状态    %s（健康检查 %s）", ServiceStatus(), healthState(opts.Port)))
+	}
+	opts.printf("")
+	printBox(opts, "Carp 安装完成", lines)
+	opts.printf("")
+	opts.printf("⚠ 首次登录后请立即修改密码；该密码只显示这一次，改密后密码文件会自动删除。")
+	opts.printf("下一步：")
+	opts.printf("  carp doctor          环境自检")
+	opts.printf("  carp                 打开运维菜单（启停/备份/日志/重置密码）")
+	opts.printf("  systemctl status carp")
+	opts.printf("")
+}
+
+func printBox(opts Options, title string, lines []string) {
+	var wrapped []string
+	for _, line := range lines {
+		wrapped = append(wrapped, wrapLine(line, 76)...)
+	}
+	width := displayWidth(title)
+	for _, line := range wrapped {
+		if w := displayWidth(line); w > width {
+			width = w
+		}
+	}
+	bar := strings.Repeat("═", width+2)
+	opts.printf("╔%s╗", bar)
+	opts.printf("║ %s%s ║", title, strings.Repeat(" ", width-displayWidth(title)))
+	opts.printf("╠%s╣", bar)
+	for _, line := range lines {
+		opts.printf("║ %s%s ║", line, strings.Repeat(" ", width-displayWidth(line)))
+	}
+	opts.printf("╚%s╝", bar)
+}
+
+func displayWidth(s string) int {
+	width := 0
+	for _, r := range s {
+		if r > 0x7f {
+			width += 2
+		} else {
+			width++
+		}
+	}
+	return width
+}
+
+// wrapLine splits a line into chunks no wider than max display columns (CJK=2).
+func wrapLine(s string, max int) []string {
+	if displayWidth(s) <= max {
+		return []string{s}
+	}
+	var lines []string
+	var b strings.Builder
+	w := 0
+	for _, r := range s {
+		rw := 1
+		if r > 0x7f {
+			rw = 2
+		}
+		if w+rw > max && b.Len() > 0 {
+			lines = append(lines, b.String())
+			b.Reset()
+			w = 0
+		}
+		b.WriteRune(r)
+		w += rw
+	}
+	if b.Len() > 0 {
+		lines = append(lines, b.String())
+	}
+	return lines
+}
+
+func lanIPv4() string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "未检测到"
+	}
+	var ips []string
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		name := strings.ToLower(iface.Name)
+		if strings.HasPrefix(name, "docker") || strings.HasPrefix(name, "veth") || strings.HasPrefix(name, "br-") ||
+			strings.HasPrefix(name, "virbr") || strings.HasPrefix(name, "tun") || strings.HasPrefix(name, "tap") ||
+			strings.HasPrefix(name, "wg") || strings.HasPrefix(name, "tailscale") || strings.HasPrefix(name, "zt") ||
+			strings.HasPrefix(name, "utun") {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			if netw, ok := addr.(*net.IPNet); ok {
+				if ip4 := netw.IP.To4(); ip4 != nil && !strings.HasPrefix(ip4.String(), "169.254.") {
+					ips = append(ips, ip4.String())
+				}
+			}
+		}
+	}
+	if len(ips) == 0 {
+		return "未检测到"
+	}
+	return ips[0]
+}
+
+func healthState(port string) string {
+	client := &http.Client{Timeout: time.Second}
+	resp, err := client.Get("http://127.0.0.1:" + port + "/health")
+	if err != nil {
+		return "无响应"
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK {
+		return "OK"
+	}
+	return fmt.Sprintf("HTTP %d", resp.StatusCode)
 }
 
 func waitHealthy(ctx context.Context, addr string, timeout time.Duration) error {
