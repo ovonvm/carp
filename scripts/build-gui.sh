@@ -15,8 +15,12 @@ case "$ARCH" in
 esac
 
 VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || echo dev)}"
-DIRTY=""
-if [[ "$VERSION" == *-dirty ]]; then DIRTY="+dirty"; VERSION="${VERSION%-dirty}"; fi
+# AssemblyVersion 必须是纯数字；从 VERSION 取 x.y.z，取不到就 0.0.0。
+# InformationalVersion 原样使用 VERSION，才能与 Go 核的 version.Version 精确一致
+# （两者不一致会让 GUI 进入只读模式）。
+NUM_VERSION="${VERSION%%-*}"
+NUM_VERSION="${NUM_VERSION#v}"
+if ! [[ "$NUM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then NUM_VERSION="0.0.0"; fi
 DIST=dist
 GUI_DIR=gui/Carp.Gui
 OUT="$DIST/gui-publish-$ARCH"
@@ -41,15 +45,17 @@ mkdir -p "$GUI_DIR/payload"
 
 echo "> staging $ARCH core payload"
 cp "$CORE" "$GUI_DIR/payload/carp-core.exe"
+echo "  core version: $("$CORE" version 2>/dev/null | head -1)"
 
-echo "> publish single-file GUI ($ARCH, $VERSION$DIRTY)"
+echo "> publish single-file GUI ($ARCH, $VERSION)"
 "$DOTNET" publish "$GUI_DIR" -c Release -r "$RID" --self-contained true \
   -p:PublishSingleFile=true \
   -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:EnableCompressionInSingleFile=true \
   -p:DebugType=none \
-  -p:Version=0.12.0 \
-  -p:InformationalVersion="$VERSION$DIRTY" \
+  -p:Version="$NUM_VERSION" \
+  -p:FileVersion="$NUM_VERSION.0" \
+  -p:InformationalVersion="$VERSION" \
   -o "$OUT" >/dev/null
 
 if [ ! -f "$OUT/Carp.exe" ]; then
@@ -65,7 +71,7 @@ fi
 cp "$OUT/Carp.exe" "$EXE"
 rm -rf "$OUT" "$GUI_DIR/payload"
 
-ZIP="$DIST/Carp-${VERSION}${DIRTY}-win-${ARCH}.zip"
+ZIP="$DIST/Carp-${VERSION}-win-${ARCH}.zip"
 rm -f "$ZIP"
 PY_BIN=""
 for cand in "${PYTHON_BIN:-}" "$(command -v python3 2>/dev/null || true)" "$(command -v python 2>/dev/null || true)" "C:/Users/hm/.dsh/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe"; do

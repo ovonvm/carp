@@ -180,7 +180,7 @@ func runUpgradeCLI(args []string) int {
 func runResetAdminCLI(args []string) int {
 	flags, err := parseCommandFlags(args, map[string]bool{
 		"prefix": true, "data": true, "user": true, "port": true,
-		"username": true, "password-stdin": false,
+		"username": true, "password-stdin": false, "root": false,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "carp reset-admin-password: %v\n", err)
@@ -206,6 +206,14 @@ func runResetAdminCLI(args []string) int {
 		fmt.Print("new password: ")
 		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		password = strings.TrimSpace(line)
+	}
+	if flags["root"] == "true" {
+		if err := installer.ResetRootPassword(context.Background(), opts.DataDir, password); err != nil {
+			fmt.Fprintf(os.Stderr, "carp reset-admin-password: %v\n", err)
+			return 1
+		}
+		fmt.Println("root password reset; all sessions revoked")
+		return 0
 	}
 	if err := installer.ResetAdminPassword(context.Background(), opts.DataDir, "", username, password); err != nil {
 		fmt.Fprintf(os.Stderr, "carp reset-admin-password: %v\n", err)

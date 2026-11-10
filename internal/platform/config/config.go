@@ -70,6 +70,10 @@ type Config struct {
 	QBUsername string
 	// QBPassword is the qBittorrent WebUI password.
 	QBPassword string
+	// GUIControl keeps `serve` resident and listens on stdin for START/STOP
+	// commands instead of binding the HTTP port immediately. The Windows
+	// control panel uses it to make start/stop instant.
+	GUIControl bool
 }
 
 // Budget is the concrete memory/IO envelope derived from Profile. It is the
@@ -178,6 +182,7 @@ func Load(args []string) (Config, error) {
 	fs.StringVar(&c.QBURL, "qb-url", c.QBURL, "qBittorrent WebUI base URL (empty disables offline torrents)")
 	fs.StringVar(&c.QBUsername, "qb-username", c.QBUsername, "qBittorrent WebUI username")
 	fs.Var(secretFlag{&c.QBPassword}, "qb-password", "qBittorrent WebUI password")
+	fs.BoolVar(&c.GUIControl, "gui-control", c.GUIControl, "stay resident and control the HTTP listener over stdin (Windows control panel)")
 	if err := fs.Parse(args); err != nil {
 		return Config{}, err
 	}

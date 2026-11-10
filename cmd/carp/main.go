@@ -15,6 +15,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -61,7 +62,7 @@ func run(args []string) int {
 		return 0
 	case "serve", "worker", "migrate", "gc", "fsck", "storage", "doctor",
 		"install", "uninstall", "service", "config", "gen-unit", "upgrade",
-		"reset-admin-password", "menu",
+		"reset-admin-password", "menu", "backup",
 		"launch", "init-admin", "autostart", "logs":
 	default:
 		fmt.Fprintf(os.Stderr, "carp: unknown command %q\n\n", cmd)
@@ -102,6 +103,8 @@ func run(args []string) int {
 		return runUpgradeCLI(rest)
 	case "reset-admin-password":
 		return runResetAdminCLI(rest)
+	case "backup":
+		return runBackupCLI(rest)
 	case "menu":
 		return runMenuCLI(rest)
 	}
@@ -126,7 +129,12 @@ func run(args []string) int {
 		fmt.Fprintf(os.Stderr, "carp: %v\n", err)
 		return 2
 	}
-	log := logx.New(cfg.LogLevel)
+	var log *slog.Logger
+	if cfg.GUIControl {
+		log = logx.NewWithWriter(cfg.LogLevel, os.Stderr)
+	} else {
+		log = logx.New(cfg.LogLevel)
+	}
 
 	if cmd == "doctor" {
 		return runDoctor(cfg, doctorOpts)
@@ -527,6 +535,11 @@ func runServe(ctx context.Context, cfg config.Config, db *sqlstore.DB, log *slog
 		}
 	}
 	handler := httpx.New(cfg, log, db, registry, ids, fls, ups, shs, trs, adm, acc, grp, webFS).Handler()
+	if cfg.GUIControl {
+		return runGUIControl(ctx, cfg, handler, log, func(mctx context.Context) {
+			maintenanceLoop(mctx, db, ids, ups, fls, shs, trs, acc, cfg, log)
+		})
+	}
 	srv := &stdhttp.Server{
 		Addr:              cfg.Addr,
 		Handler:           handler,
@@ -536,26 +549,13 @@ func runServe(ctx context.Context, cfg config.Config, db *sqlstore.DB, log *slog
 		IdleTimeout:       120 * time.Second,
 	}
 
-	cleanupDone := make(chan struct{})
+	maintenanceCtx, stopMaintenance := context.WithCancel(ctx)
+	defer stopMaintenance()
+	var maintenanceWG sync.WaitGroup
+	maintenanceWG.Add(1)
 	go func() {
-		defer close(cleanupDone)
-		ticker := time.NewTicker(time.Hour)
-		defer ticker.Stop()
-		transfersTick := time.NewTicker(2 * time.Second)
-		defer transfersTick.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				runMaintenance(ctx, db, ids, ups, fls, shs, trs, acc, log)
-			case <-transfersTick.C:
-				if cfg.WorkerMode == config.WorkerInternal {
-					trs.RunPending(ctx)
-					trs.RunQB(ctx)
-				}
-			}
-		}
+		defer maintenanceWG.Done()
+		maintenanceLoop(maintenanceCtx, db, ids, ups, fls, shs, trs, acc, cfg, log)
 	}()
 
 	errCh := make(chan error, 1)
@@ -597,10 +597,45 @@ func runServe(ctx context.Context, cfg config.Config, db *sqlstore.DB, log *slog
 			log.Warn("graceful shutdown failed", "err", err)
 			_ = srv.Close()
 		}
-		<-cleanupDone
+		stopMaintenance()
+		maintenanceWG.Wait()
 		trs.Wait()
 		log.Info("carp stopped")
 		return 0
+	}
+}
+
+// maintenanceLoop runs the periodic housekeeping for a live server. The GUI
+// control mode starts and stops it together with the HTTP listener so a
+// "stopped" service does not keep touching the database or qBittorrent.
+func maintenanceLoop(
+	ctx context.Context,
+	db *sqlstore.DB,
+	ids *idsvc.Service,
+	ups *upsvc.Service,
+	fls *filessvc.Service,
+	shs *sharesvc.Service,
+	trs *transfersvc.Service,
+	acc *accountsvc.Service,
+	cfg config.Config,
+	log *slog.Logger,
+) {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+	transfersTick := time.NewTicker(2 * time.Second)
+	defer transfersTick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			runMaintenance(ctx, db, ids, ups, fls, shs, trs, acc, log)
+		case <-transfersTick.C:
+			if cfg.WorkerMode == config.WorkerInternal {
+				trs.RunPending(ctx)
+				trs.RunQB(ctx)
+			}
+		}
 	}
 }
 
@@ -841,6 +876,8 @@ usage:
   carp gen-unit          print the systemd unit for the current layout
   carp upgrade           replace the binary with --binary, restart and roll back on failure
   carp reset-admin-password  offline admin password reset (root; service stopped)
+  carp backup [flags]    create a portable single-file backup (db + storage)
+                          flags: -data <dir> -out <dir> [-no-secret] [-label text]
   carp menu              interactive operator menu (also shown by a bare carp on a TTY)
   carp launch            Windows: ensure the service is running and open the web UI
   carp init-admin        Windows: create the first admin (--password-stdin; used by setup)

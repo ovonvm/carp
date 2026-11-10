@@ -3,6 +3,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- 备份目录选择使用 System.Windows.Forms.FolderBrowserDialog（WPF 没有等价控件）。 -->
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Carp</AssemblyName>
@@ -11,14 +13,22 @@
     <AssemblyTitle>Carp 控制面板</AssemblyTitle>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.12.0</Version>
-    <FileVersion>0.12.0.0</FileVersion>
+    <!-- 版本号由 scripts/build-gui.sh 通过 -p:Version/-p:InformationalVersion 注入，
+         且必须与 Go 核的 version.Version 完全一致（不一致 GUI 会进只读模式）。 -->
+    <Version>0.0.0</Version>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishSingleFile Condition="'$(RuntimeIdentifier)' != ''">true</PublishSingleFile>
     <SelfContained Condition="'$(RuntimeIdentifier)' != ''">true</SelfContained>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <DebugType>none</DebugType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms 只为 FolderBrowserDialog 引入；去掉它的全局 using，避免
+         Application / Button / Point 等与 WPF 类型冲突。 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- 构建脚本把 Windows 版核心释放在 payload/carp-core.exe；单文件包内嵌。 -->

@@ -4,8 +4,9 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- 本程序需要写入 %ProgramData%\Carp（数据/核心/配置），统一要求管理员。 -->
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+        <!-- 数据目录默认是 exe 所在目录，配置/日志写入 %APPDATA%、%LOCALAPPDATA%，
+             因此本程序以普通用户权限运行；端口被占用等情况由界面提示。 -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>

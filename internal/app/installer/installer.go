@@ -447,6 +447,16 @@ func ResetAdminPassword(ctx context.Context, dataDir, dbPath, username, password
 	return resetAdminPassword(ctx, dataDir, username, password)
 }
 
+// ResetRootPassword sets a new password for the root account while the service
+// is stopped, then revokes all sessions. The root is the first account created
+// on a fresh install; other administrators are left untouched.
+func ResetRootPassword(ctx context.Context, dataDir, password string) error {
+	if len(password) < 8 {
+		return fmt.Errorf("password must be at least 8 characters")
+	}
+	return resetRootPassword(ctx, dataDir, password)
+}
+
 func systemctl(args ...string) error {
 	cmd := exec.Command("systemctl", args...)
 	out, err := cmd.CombinedOutput()

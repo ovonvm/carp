@@ -1,14 +1,23 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace Carp.Gui.Services;
 
-public sealed record CliResult(bool Ok, string Output);
+/// <summary>命令行执行结果；<see cref="Output"/> 合并了 stdout 与 stderr。</summary>
+public readonly record struct CliResult(bool Ok, string Output);
 
+/// <summary>以 UTF-8 运行 carp 命令行子命令（backup / reset-admin-password / doctor / version）。</summary>
 public static class CliRunner
 {
-    public static async Task<CliResult> RunAsync(string exe, string arguments, string? workingDirectory = null, string? stdin = null, int timeoutSeconds = 90)
+    public static async Task<CliResult> RunAsync(
+        string exe,
+        string arguments,
+        string? workingDirectory = null,
+        string? stdin = null,
+        int timeoutSeconds = 90)
     {
+        var output = new StringBuilder();
         var psi = new ProcessStartInfo
         {
             FileName = exe,
@@ -18,43 +27,72 @@ public static class CliRunner
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             RedirectStandardInput = stdin != null,
-            WorkingDirectory = workingDirectory ?? AppContext.BaseDirectory,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
+            WorkingDirectory = workingDirectory ?? AppContext.BaseDirectory,
         };
+
+        // StandardInputEncoding 仅在重定向 stdin 时才允许设置。
+        if (stdin != null)
+        {
+            psi.StandardInputEncoding = new UTF8Encoding(false);
+        }
+
+        using var process = new Process { StartInfo = psi };
         try
         {
-            using var proc = Process.Start(psi);
-            if (proc == null)
+            if (!process.Start())
             {
-                return new CliResult(false, "无法启动进程");
+                return new CliResult(false, "无法启动进程：" + exe);
             }
-            var sb = new StringBuilder();
-            proc.OutputDataReceived += (_, e) => { if (e.Data != null) { sb.AppendLine(e.Data); } };
-            proc.ErrorDataReceived += (_, e) => { if (e.Data != null) { sb.AppendLine(e.Data); } };
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            if (stdin != null)
-            {
-                await proc.StandardInput.WriteLineAsync(stdin);
-                await proc.StandardInput.FlushAsync();
-                proc.StandardInput.Close();
-            }
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
-            try
-            {
-                await proc.WaitForExitAsync(cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                try { proc.Kill(true); } catch { }
-                return new CliResult(false, sb.ToString() + "\n[超时]");
-            }
-            return new CliResult(proc.ExitCode == 0, sb.ToString());
         }
         catch (Exception ex)
         {
-            return new CliResult(false, ex.Message);
+            return new CliResult(false, "无法启动进程：" + ex.Message);
         }
+
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+
+        if (stdin != null)
+        {
+            try
+            {
+                await process.StandardInput.WriteAsync(stdin).ConfigureAwait(false);
+                await process.StandardInput.FlushAsync().ConfigureAwait(false);
+                process.StandardInput.Close();
+            }
+            catch
+            {
+                // stdin 写入失败时继续等待退出码。
+            }
+        }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds)));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // 忽略。
+            }
+            return new CliResult(false, $"命令执行超时（{timeoutSeconds} 秒）。\n{output}");
+        }
+
+        output.Append(await stdout.ConfigureAwait(false));
+        var err = await stderr.ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(err))
+        {
+            output.Append(err);
+        }
+        var text = output.ToString().Trim();
+        return new CliResult(process.ExitCode == 0, text);
     }
 }

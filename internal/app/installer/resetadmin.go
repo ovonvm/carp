@@ -13,6 +13,48 @@ import (
 	"carp/migrations"
 )
 
+// resetRootPassword is the offline part of `carp reset-admin-password --root`.
+// It targets the account with is_root = 1 and leaves other administrators
+// untouched.
+func resetRootPassword(ctx context.Context, dataDir, password string) error {
+	dbPath := filepath.Join(dataDir, "db", "carp.db")
+	if _, err := os.Stat(dbPath); err != nil {
+		return fmt.Errorf("database not found at %s (is the service running? stop it first): %w", dbPath, err)
+	}
+	db, err := sqlstore.OpenWithOptions(ctx, dbPath, sqlstore.Options{})
+	if err != nil {
+		return fmt.Errorf("open database: %w", err)
+	}
+	defer db.Close()
+	if _, err := db.Migrate(ctx, migrations.FS); err != nil {
+		return fmt.Errorf("migrate database: %w", err)
+	}
+	acc, err := db.RootUser(ctx)
+	if err != nil {
+		return fmt.Errorf("no root account found: %w", err)
+	}
+	hash, err := passwd.Hash(password)
+	if err != nil {
+		return err
+	}
+	if err := db.UpdatePassword(ctx, acc.ID, hash, time.Now().UTC()); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	revoked, err := db.DeleteUserSessionsExcept(ctx, acc.ID, "")
+	if err != nil {
+		return fmt.Errorf("revoke sessions: %w", err)
+	}
+	_ = os.Remove(filepath.Join(dataDir, "bootstrap", "initial-admin.txt"))
+	_ = db.InsertAudit(ctx, sqlstore.AuditEvent{
+		Action:     "admin.password_reset",
+		TargetType: "user",
+		TargetID:   acc.ID,
+		Result:     "success",
+		Detail:     fmt.Sprintf(`{"via":"cli-root","revoked_sessions":%d}`, revoked),
+	})
+	return nil
+}
+
 // resetAdminPassword is the offline part of `carp reset-admin-password`: it
 // updates the stored hash and revokes every session. The service must be
 // stopped so WAL writers do not contend.

@@ -82,6 +82,16 @@ func (d *DB) UserByID(ctx context.Context, id int64) (identity.User, error) {
 	return scanUser(d.QueryRowContext(ctx, q, id))
 }
 
+// RootUser loads the account marked as the instance root (is_root = 1).
+// Exactly one user may carry the flag; the first match is returned.
+func (d *DB) RootUser(ctx context.Context) (identity.User, error) {
+	q := `SELECT ` + userColumns + `
+		FROM users u JOIN roles r ON r.id = u.role_id
+		WHERE u.is_root = 1
+		LIMIT 1`
+	return scanUser(d.QueryRowContext(ctx, q))
+}
+
 func scanUser(row interface{ Scan(...any) error }) (identity.User, error) {
 	var (
 		u           identity.User

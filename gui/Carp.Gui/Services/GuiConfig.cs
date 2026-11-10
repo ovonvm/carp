@@ -4,8 +4,8 @@ using System.Text.Json;
 namespace Carp.Gui.Services;
 
 /// <summary>
-/// GUI 配置。本版本固定以管理员运行，数据与配置都放在机器级目录
-/// %ProgramData%\Carp（无需用户选择，避免目录不可写）。
+/// GUI 配置。数据目录默认就是 Carp 程序所在目录（便携式布局），
+/// 配置与备份记录放在 %APPDATA%\Carp\gui.json；exe 目录不可写时可回退到 %LOCALAPPDATA%\Carp。
 /// </summary>
 public sealed class GuiConfig
 {
@@ -17,21 +17,61 @@ public sealed class GuiConfig
     public bool CookieSecure { get; set; }
     public bool AutoStart { get; set; }
 
+    /// <summary>最近一次备份的输出目录（下次选择目录时的初始位置）。</summary>
+    public string LastBackupDir { get; set; } = "";
+
+    /// <summary>最近一次备份生成的 zip 完整路径。</summary>
+    public string LastBackupPath { get; set; } = "";
+
+    /// <summary>最近一次备份完成时间（yyyy-MM-dd HH:mm）。</summary>
+    public string LastBackupTime { get; set; } = "";
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    /// <summary>%ProgramData%\Carp，机器级可写目录（需管理员）。</summary>
-    public static string MachineRoot => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Carp");
+    /// <summary>Carp 程序（GUI exe）所在目录，同时是默认数据目录。</summary>
+    public static string ExeDir => Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
 
-    public static string ConfigPath => Path.Combine(MachineRoot, "gui-config.json");
+    /// <summary>%APPDATA%\Carp，存放 gui.json。</summary>
+    public static string UserRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Carp");
 
-    public static string DefaultDataDir => Path.Combine(MachineRoot, "data");
+    /// <summary>%LOCALAPPDATA%\Carp，exe 目录不可写时的数据目录回退位置。</summary>
+    public static string LocalRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Carp");
 
-    public static string CoreDir => Path.Combine(MachineRoot, "core");
+    public static string ConfigPath => Path.Combine(UserRoot, "gui.json");
 
-    public static string DefaultCorePath => Path.Combine(CoreDir, "carp-core.exe");
+    public static string DefaultDataDir => ExeDir;
 
-    public static string BackupDir => Path.Combine(MachineRoot, "backups");
+    public static string LocalDataDir => LocalRoot;
+
+    /// <summary>
+    /// 内嵌核心的释放目录：默认放在 exe 旁边的 core/，便携包把整个目录搬走即可。
+    /// 如果 exe 目录不可写（例如解压到 Program Files），自动回退到用户目录。
+    /// </summary>
+    public static string LocalCoreDir
+    {
+        get
+        {
+            var portable = Path.Combine(ExeDir, "core");
+            try
+            {
+                Directory.CreateDirectory(portable);
+                return portable;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Path.Combine(LocalRoot, "core");
+            }
+            catch (IOException)
+            {
+                return Path.Combine(LocalRoot, "core");
+            }
+        }
+    }
+
+    /// <summary>没有记住上次备份位置时的默认备份目录。</summary>
+    public static string BackupFallbackDir => Path.Combine(LocalRoot, "backups");
 
     public static GuiConfig Load()
     {
@@ -62,27 +102,34 @@ public sealed class GuiConfig
         {
             DataDir = DefaultDataDir;
         }
-        if (string.IsNullOrWhiteSpace(CorePath))
+        DataDir = DataDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (string.IsNullOrWhiteSpace(DataDir))
         {
-            CorePath = DefaultCorePath;
+            DataDir = DefaultDataDir;
         }
         if (Port is < 1 or > 65535)
         {
             Port = 50011;
         }
-        if (string.IsNullOrWhiteSpace(Profile))
+        if (!string.Equals(Profile, "low", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(Profile, "high", StringComparison.OrdinalIgnoreCase))
         {
             Profile = "low";
         }
-        if (string.IsNullOrWhiteSpace(LogLevel))
+        Profile = Profile.ToLowerInvariant();
+        if (LogLevel is not ("debug" or "info" or "warn" or "error"))
         {
             LogLevel = "info";
+        }
+        if (string.IsNullOrWhiteSpace(LastBackupDir))
+        {
+            LastBackupDir = "";
         }
     }
 
     public void Save()
     {
-        Directory.CreateDirectory(MachineRoot);
+        Directory.CreateDirectory(UserRoot);
         File.WriteAllText(ConfigPath, JsonSerializer.Serialize(this, JsonOptions));
     }
 }

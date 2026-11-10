@@ -3,17 +3,46 @@ using System.Windows;
 
 namespace Carp.Gui;
 
-/// <summary>首次启动时展示一次性初始密码，并提供复制按钮。</summary>
+/// <summary>一次性密码展示框：首次启动的初始管理员密码，或重置后的 root 密码。</summary>
 public partial class FirstRunDialog : Window
 {
     private readonly string _password;
 
-    public FirstRunDialog(string password)
+    public FirstRunDialog(
+        string password,
+        string? hint = null,
+        string? heading = null,
+        string? message = null,
+        string? account = null)
     {
         InitializeComponent();
         _password = password;
         PasswordBox.Text = password;
-        HintText.Text = "关闭此窗口后仍可在「高级 → 管理员账号」点「显示密码」再次查看。";
+        HintText.Text = hint ?? "关闭此窗口后仍可在「高级 → 管理员账号」点「显示密码」再次查看。";
+        if (!string.IsNullOrWhiteSpace(heading))
+        {
+            HeadingText.Text = heading;
+        }
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            MessageText.Text = message;
+        }
+        if (!string.IsNullOrWhiteSpace(account))
+        {
+            AccountText.Text = account;
+        }
+        Loaded += (_, _) =>
+        {
+            try
+            {
+                PasswordBox.Focus();
+                PasswordBox.SelectAll();
+            }
+            catch
+            {
+                // 忽略焦点异常
+            }
+        };
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e)
