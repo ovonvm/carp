@@ -33,7 +33,7 @@
 <tr><td>磁盘</td><td>按文件量准备；数据库和文件都在数据目录下</td></tr>
 <tr><td>浏览器</td><td>Chrome/Edge/Firefox/Safari 的近两年版本；移动端浏览器可用</td></tr>
 <tr><td>端口</td><td>默认 <code>127.0.0.1:50011</code>，可通过配置修改</td></tr>
-<tr><td>权限</td><td>Linux：安装与 systemd 操作需要 root，程序本身以普通用户运行；Windows：控制面板需要管理员权限</td></tr>
+<tr><td>权限</td><td>Linux：安装与 systemd 操作需要 root，程序本身以普通用户运行；Windows：普通用户即可，无需管理员权限</td></tr>
 </tbody></table>
 <h2 id="22不需要什么">2.2 不需要什么</h2>
 <ul>
@@ -53,10 +53,10 @@
 <table><thead><tr><th>项目</th><th>Linux</th><th>Windows</th></tr></thead><tbody>
 <tr><td>安装</td><td><code>install.sh</code> 自动安装为服务</td><td>单文件 <code>Carp.exe</code> 控制面板，双击即用</td></tr>
 <tr><td>后台运行</td><td>systemd 服务 <code>carp</code></td><td>控制面板内启动核心进程；关闭窗口会停止服务</td></tr>
-<tr><td>日志</td><td><code>journalctl -u carp</code></td><td>控制面板首页运行日志；命令行方式会写日志文件</td></tr>
-<tr><td>开机自启</td><td><code>systemctl enable carp</code></td><td>控制面板「高级 → 登录 Windows 时自动启动」</td></tr>
+<tr><td>日志</td><td><code>journalctl -u carp</code></td><td>面板下方「运行日志」+ <code>logs\gui-YYYYMMDD.log</code>（保留 7 天）</td></tr>
+<tr><td>开机自启</td><td><code>systemctl enable carp</code></td><td>控制面板左栏「设置 → 开机自启」</td></tr>
 <tr><td>升级</td><td><code>sudo carp upgrade --binary &lt;新程序&gt;</code></td><td>停止服务后用新 <code>Carp.exe</code> 覆盖旧文件</td></tr>
-<tr><td>数据目录</td><td><code>/opt/carp/data</code></td><td><code>%ProgramData%\Carp\data</code></td></tr>
+<tr><td>数据目录</td><td><code>/opt/carp/data</code></td><td><code>Carp.exe</code> 同目录（不可写时回退 <code>%LOCALAPPDATA%\Carp</code>）</td></tr>
 </tbody></table>
 <h2 id="25网络与端口">2.5 网络与端口</h2>
 <p>默认只监听本机回环地址，意味着只有这台机器上的浏览器能打开。常见选择：</p>
@@ -68,12 +68,12 @@
 <h2 id="26从源码构建可选">2.6 从源码构建（可选）</h2>
 <p>普通用户不需要这一步。仓库自带构建脚本：</p>
 <pre><code class="language-bash">./scripts/build.sh        # 前端 + Go 核心，生成 Linux 发布包
-./scripts/build-gui.sh    # Windows 控制面板（需要 .NET 8 SDK）</code></pre>
+./scripts/build-gui.sh    # Windows 控制面板（打包需要 .NET 8 SDK；产物运行不需要）</code></pre>
 <p>需要 Go 1.24+、Node.js 20+ 与 pnpm。构建细节见仓库根目录 <code>README.md</code>。</p>
 <h2 id="27账号与权限前提">2.7 账号与权限前提</h2>
 <ul>
   <li>Linux 安装方式会创建一个不能登录的 <code>carp</code> 用户，数据目录归它所有；手工拷贝数据后如果权限不对，会表现为「能启动但打不开文件」或启动报错，修复方式是 <code>sudo chown -R carp:carp /opt/carp/data</code>。</li>
-  <li>Windows 控制面板以管理员身份运行，数据写在 <code>%ProgramData%\Carp</code>；同一台机器的其它标准用户可能无权访问该目录。</li>
+  <li>Windows 控制面板以普通用户运行，数据写在 <code>Carp.exe</code> 同目录（<code>db</code>、<code>storage</code>、<code>tmp</code>、<code>bootstrap</code>、<code>logs</code>）；放在 <code>Program Files</code> 等不可写目录时，面板会回退到 <code>%LOCALAPPDATA%\Carp</code> 并在日志里说明。</li>
 </ul>
 
     </article>

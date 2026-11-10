@@ -18,7 +18,7 @@ public partial class FirstRunDialog : Window
         InitializeComponent();
         _password = password;
         PasswordBox.Text = password;
-        HintText.Text = hint ?? "关闭此窗口后仍可在「高级 → 管理员账号」点「显示密码」再次查看。";
+        HintText.Text = hint ?? "密码只显示这一次，请立即复制并保存。";
         if (!string.IsNullOrWhiteSpace(heading))
         {
             HeadingText.Text = heading;

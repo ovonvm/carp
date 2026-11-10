@@ -694,7 +694,10 @@ public partial class MainWindow : Window
             {
                 return;
             }
-            new FirstRunDialog(password) { Owner = this }.ShowDialog();
+            new FirstRunDialog(
+                password,
+                hint: "密码只显示这一次，请立即复制并保存。之后可在数据目录的 bootstrap\\initial-admin.txt 查看（修改密码后自动删除）。")
+            { Owner = this }.ShowDialog();
         }
         catch (Exception ex)
         {

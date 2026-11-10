@@ -278,8 +278,9 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
             <Setter Property="CaretBrush" Value="{StaticResource AccentDark}" />
-            <Setter Property="Padding" Value="7,5" />
+            <Setter Property="Padding" Value="7,4" />
             <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="SelectionBrush" Value="{StaticResource Accent}" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -289,8 +290,6 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="6" SnapsToDevicePixels="True">
                             <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"
                                           HorizontalScrollBarVisibility="Hidden"
                                           VerticalScrollBarVisibility="Hidden" />
                         </Border>

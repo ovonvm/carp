@@ -42,11 +42,11 @@ sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011</code><
 <p>升级只替换程序，不会动 <code>carp.env</code>、<code>data/</code> 和 systemd unit；数据库迁移在启动时自动执行。</p>
 <h3 id="windows">Windows</h3>
 <ol>
-  <li>控制面板「停止服务」。</li>
-  <li>用新的 <code>Carp.exe</code> 覆盖旧文件（先备份数据，见 7.3）。</li>
-  <li>双击打开，点「启动服务」，确认能正常登录。</li>
+  <li>面板点「停止」。</li>
+  <li>关闭面板，用新的 <code>Carp.exe</code> 覆盖旧文件（先备份数据，见 7.3）。</li>
+  <li>双击打开，点「启动」，确认能正常登录。</li>
 </ol>
-<p>数据在 <code>%ProgramData%\Carp</code>，覆盖 exe 不影响数据。</p>
+<p>数据、<code>core\</code>、<code>logs\</code> 都在 <code>Carp.exe</code> 同目录，覆盖 exe 不影响数据；内嵌核心按 SHA-256 校验，版本不同会自动重新释放。</p>
 <h3 id="便携方式">便携方式</h3>
 <p>停止进程，替换二进制，重新 <code>./carp serve</code> 即可。</p>
 <h2 id="73备份">7.3 备份</h2>
@@ -68,7 +68,7 @@ sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011</code><
 <p>用 cron 每天自动备份：</p>
 <pre><code class="language-cron">30 2 * * * /opt/carp/scripts/backup.sh &gt;&gt; /var/log/carp-backup.log 2&gt;&amp;1</code></pre>
 <h3 id="备份脚本windows">备份脚本（Windows）</h3>
-<p>控制面板「高级 → 备份数据（zip）」会把整个数据目录打成 zip，放到 <code>%ProgramData%\Carp\backups</code>。建议把该目录再同步到另一块磁盘或网络位置。</p>
+<p>面板「立即备份」会让你选择保存目录，把数据打成 zip（运行中先做 SQLite 快照，不中断服务）。备份排除 <code>secret.key</code>、<code>bootstrap</code>、<code>tmp</code>：恢复后 qBittorrent 密码需要重填，root 密码用快捷操作「重置 root 密码」重新生成。建议把备份再同步到另一块磁盘或网络位置。</p>
 <h2 id="74恢复">7.4 恢复</h2>
 <h3 id="演练不动真实数据">演练（不动真实数据）</h3>
 <pre><code class="language-bash">sudo /opt/carp/scripts/restore.sh --list                  # 列出快照
@@ -78,10 +78,10 @@ sudo /opt/carp/scripts/restore.sh --snapshot &lt;时间戳&gt; --drill</code></p
 <pre><code class="language-bash">sudo systemctl stop carp
 sudo /opt/carp/scripts/restore.sh --snapshot &lt;时间戳&gt; --apply --yes
 sudo systemctl start carp</code></pre>
-<p>也可以把前后的 <code>systemctl</code> 换成 <code>carp service stop/start</code>，它会打印进度和结果；失败时按输出附带的 <code>journalctl -u carp</code> 最近日志排查。恢复会覆盖数据目录，务必确认快照时间戳。Windows 恢复：停止服务 → 解压备份 zip → 用其中内容替换 <code>%ProgramData%\Carp\data</code> → 启动服务。</p>
+<p>也可以把前后的 <code>systemctl</code> 换成 <code>carp service stop/start</code>，它会打印进度和结果；失败时按输出附带的 <code>journalctl -u carp</code> 最近日志排查。恢复会覆盖数据目录，务必确认快照时间戳。Windows 恢复：面板点「停止」→ 关闭面板 → 解压备份 zip，把其中的 <code>db</code>、<code>storage</code> 覆盖到 <code>Carp.exe</code> 同目录 → 双击启动 → 用「重置 root 密码」重设密码。</p>
 <h2 id="75迁移数据目录换机器">7.5 迁移数据目录 / 换机器</h2>
 <p><strong>Linux</strong>：停止服务 → 用 <code>rsync -a</code> 复制 <code>data/</code> 到新位置 → 修改 <code>CARP_DATA_DIR</code>（或 <code>carp config</code>）→ 启动 → <code>carp doctor</code> 复核。注意属主要改成运行用户。</p>
-<p><strong>Windows</strong>：控制面板「高级 → 更改数据目录」，只能选择空目录；程序会停止服务、复制数据、保存配置并重启。</p>
+<p><strong>Windows</strong>：面板不提供修改数据目录的入口，数据目录固定为 <code>Carp.exe</code> 同目录（不可写时回退 <code>%LOCALAPPDATA%\Carp</code>）。要搬家就把整个文件夹复制到新位置；跨机迁移用「立即备份」打包后在新位置解压。</p>
 <p><strong>换机器</strong>：在新机器安装同版本 → 停止服务 → 用备份恢复数据目录 → 启动并验证登录、文件列表、下载。域名与反向代理配置需要在新机器上重建。</p>
 <h2 id="76回滚">7.6 回滚</h2>
 <ul>

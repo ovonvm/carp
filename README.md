@@ -16,12 +16,14 @@
 
 ### Windows
 
-1. 下载安装包并安装，或解压便携压缩包后双击 `Carp.exe`。
-2. 首次启动会创建管理员账号；记下界面显示的初始密码。
-3. 浏览器打开 <http://127.0.0.1:50011> 登录，进入「设置」修改密码。
+1. 解压便携包（或安装包）后双击 `Carp.exe`，不需要管理员权限。
+2. 首次启动会创建管理员 `admin`，面板弹窗显示初始密码（只显示一次），记下后关闭弹窗。
+3. 点面板上的「打开网盘」，或浏览器打开 <http://127.0.0.1:50011> 登录，进入「设置」修改密码。
 
-> 桌面面板需要 .NET 8 桌面运行时（安装包会检测并引导安装）。
+> 桌面面板是自包含单文件：不需要 .NET 运行时，也不需要管理员权限；数据、核心、日志都写在 `Carp.exe` 同目录。
+> 数据就在 `Carp.exe` 同目录（`db/`、`storage/`、`tmp/`、`bootstrap/`、`logs/`），整个文件夹拷走即可迁移。
 > 关闭窗口即停止服务；再次双击 `Carp.exe` 继续使用原数据。
+> **旧的 `data/` 目录不会自动迁移**：升级到本版本后面板从空数据开始，旧目录原样保留。需要沿用旧数据时，把旧 `data/` 里的 `db/`、`storage/`、`bootstrap/` 原样拷贝到 `Carp.exe` 同目录再启动。
 
 ### Linux
 
@@ -41,7 +43,10 @@ sudo ./install.sh
 
 ## 数据与配置
 
-- 数据目录默认是 `<可执行文件目录>/data`（Windows 面板为 `%ProgramData%\Carp\data`）。
+- Linux 服务安装：数据在 `/opt/carp/data`；Linux 便携或命令行运行：默认 `<可执行文件目录>/data`（可用 `-data` 指定）。
+- Windows 桌面面板：数据直接放在 `Carp.exe` 同目录（`db/`、`storage/`、`tmp/`、`bootstrap/`、`logs/`），不再写 `%ProgramData%`；exe 目录不可写时回退到 `%LOCALAPPDATA%\Carp`。
+- 面板自身的配置在 `%APPDATA%\Carp\gui.json`（端口、profile、日志级别、开机自启、最近备份位置）；面板日志在 `<数据目录>/logs/gui.log`，按天轮转、保留 7 天。
+- 面板「立即备份」选择目标目录后打包数据；运行中备份会先做 SQLite 快照。为避免泄漏凭据，`secret.key`、`bootstrap/`、`tmp/` 不打进备份包，恢复后需在面板「重置 root 密码」重新设置管理员密码。
 - 初始管理员密码保存在 `<data>/bootstrap/initial-admin.txt`；修改密码后该文件自动删除。
 - 主要配置项（flag 或环境变量，`CARP_` 前缀）：`-addr`/`CARP_ADDR`、`-data`/`CARP_DATA_DIR`、`-profile`/`CARP_PROFILE`、`-cookie-secure`/`CARP_COOKIE_SECURE`、`CARP_ALLOW_ORIGINS`；离线下载需要 `CARP_QB_URL`、`CARP_QB_USERNAME`、`CARP_QB_PASSWORD`。
 - Linux 安装后可运行 `carp` 打开运维菜单（状态行显示访问地址；启停会显示进度与结果；另有 doctor、日志、备份、升级、重置管理员密码、卸载）。
@@ -79,5 +84,5 @@ docs/wiki/      用户手册（GitHub Pages 发布）
 
 ## 发布
 
-- 当前版本：`v2.2.7`（2026-11-10）
+- 当前版本：`v2.3.0`（2026-11-10）
 - Release：<https://github.com/ovonvm/carp/releases>

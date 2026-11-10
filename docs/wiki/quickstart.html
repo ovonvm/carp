@@ -30,7 +30,7 @@
 <table><thead><tr><th>方式</th><th>适合谁</th><th>怎么开始</th><th>默认数据目录</th></tr></thead><tbody>
 <tr><td>Linux 安装包（推荐）</td><td>服务器、NAS、长期运行</td><td>解包后执行 <code>sudo ./install.sh</code>，自动注册 systemd 服务</td><td><code>/opt/carp/data</code></td></tr>
 <tr><td>便携运行</td><td>临时试用、没有 systemd 的环境</td><td><code>./carp serve</code>，前台运行</td><td>程序所在目录下的 <code>data/</code></td></tr>
-<tr><td>Windows 控制面板</td><td>Windows 10/11 桌面</td><td>双击 <code>Carp.exe</code>，点「启动服务」</td><td><code>%ProgramData%\Carp\data</code></td></tr>
+<tr><td>Windows 控制面板</td><td>Windows 10/11 桌面</td><td>双击 <code>Carp.exe</code>，点「打开网盘」</td><td><code>Carp.exe</code> 同目录</td></tr>
 </tbody></table>
 <p>三种方式运行的是同一个核心程序，功能完全一致，区别只在安装与服务管理方式。</p>
 <h2 id="12linux安装包方式">1.2 Linux：安装包方式</h2>
@@ -50,12 +50,13 @@ carp             # 打开运维菜单（启动/停止/备份/升级等）</code>
 <p>运维菜单的状态行会显示访问地址；菜单里的 <code>1</code>/<code>2</code>/<code>3</code>（启动/停止/重启）会显示进度和结果，不再静默返回。</p>
 <h2 id="13windows控制面板方式">1.3 Windows：控制面板方式</h2>
 <ol>
-  <li>把 <code>Carp.exe</code> 放到一个单独文件夹（不要放在中文或很深的路径下）。</li>
-  <li>双击运行，在 UAC 弹窗点「是」（程序需要管理员权限写入 <code>%ProgramData%\Carp</code>）。</li>
-  <li>首次启动会自动创建管理员 <code>admin</code>，随机初始密码会显示一次，同时保存在 <code>%ProgramData%\Carp\data\bootstrap\initial-admin.txt</code>。</li>
-  <li>在首页点「启动服务」，再点「在浏览器打开网盘」。</li>
+  <li>把 <code>Carp.exe</code> 放到一个单独文件夹（不要放在中文或很深的路径下，也不要放进 <code>Program Files</code>，否则数据目录不可写）。</li>
+  <li>双击运行，<strong>不需要管理员权限</strong>；数据直接写在这个文件夹里。</li>
+  <li>首次启动会自动创建管理员 <code>admin</code>，同时弹出「账号与密码」窗口显示初始密码（只显示一次），并保存在同目录的 <code>bootstrap\initial-admin.txt</code>。初始密码之后可在面板「高级 → 管理员账号」里再次查看。</li>
+  <li>点面板上的「打开网盘」（或手动打开 &lt;http://127.0.0.1:50011&gt;）。</li>
   <li>用 <code>admin</code> 和初始密码登录，然后到「设置」修改密码。</li>
 </ol>
+<p>面板左侧「设置」可以改端口、profile、日志级别、开机自启；「立即备份」把数据打包到你选的目录。关闭窗口会停止服务并退出核心。</p>
 <h2 id="14便携方式任意系统">1.4 便携方式（任意系统）</h2>
 <pre><code class="language-bash">chmod +x carp
 ./carp serve</code></pre>
@@ -66,7 +67,7 @@ carp             # 打开运维菜单（启动/停止/备份/升级等）</code>
   <li>用户名填 <code>admin</code>，密码填安装/首次启动时显示的初始密码。</li>
   <li>登录后先到「设置 → 修改密码」改掉初始密码（改密后其它设备上的旧会话会失效）。</li>
 </ol>
-<blockquote><p>初始密码只显示一次。忘记时可以：Linux 用 <code>sudo carp reset-admin-password</code>；Windows 用控制面板「高级 → 重置管理员密码」。重置后需要重新登录。</p></blockquote>
+<blockquote><p>初始密码只显示一次（同一份也写在数据目录的 <code>bootstrap/initial-admin.txt</code>，改密后自动删除）。忘记时可以：Linux 用 <code>sudo carp reset-admin-password</code>；Windows 用面板快捷操作「重置 root 密码」。重置后需要重新登录。</p></blockquote>
 <h2 id="16安装后目录速览linux">1.6 安装后目录速览（Linux）</h2>
 <table><thead><tr><th>路径</th><th>内容</th></tr></thead><tbody>
 <tr><td><code>/opt/carp/carp</code></td><td>程序二进制</td></tr>
@@ -76,7 +77,7 @@ carp             # 打开运维菜单（启动/停止/备份/升级等）</code>
 <tr><td><code>/opt/carp/data/bootstrap/</code></td><td>首次管理员信息（改密后自动删除）</td></tr>
 <tr><td><code>/opt/carp/backup/</code></td><td>备份目录（由备份脚本生成）</td></tr>
 </tbody></table>
-<p>Windows 下对应位置是 <code>%ProgramData%\Carp\data</code>、<code>%ProgramData%\Carp\backups</code>（控制面板「高级 → 打开数据目录/备份目录」可直接打开）。</p>
+<p>Windows 面板下对应位置是 <code>Carp.exe</code> 同目录的 <code>db\</code>、<code>storage\</code>、<code>bootstrap\</code>、<code>logs\</code>（面板「打开数据目录」可直接打开）；备份文件在你每次选择的目录里，面板配置在 <code>%APPDATA%\Carp\gui.json</code>。</p>
 <h2 id="17接下来做什么">1.7 接下来做什么</h2>
 <ul>
   <li>想让别人也能访问：先读「5. 反向代理与 HTTPS」，不要直接把端口暴露到公网。</li>
