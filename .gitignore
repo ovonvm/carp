@@ -24,3 +24,7 @@ dist/.win-stage/
 # private dev artifacts (never push)
 docs/acceptance/
 docs/design-preview/
+
+# wiki generator output (docs/wiki is the published copy)
+docs/wiki-src/dist/
+.Carp_Gui/

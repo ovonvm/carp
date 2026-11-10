@@ -7,7 +7,7 @@ cd "$ROOT"
 
 GO_BIN="${GO_BIN:-$(command -v go || true)}"
 if [ -z "$GO_BIN" ]; then
-  GO_BIN="/d/dshwork/.tools/go/bin/go"
+  GO_BIN="$(go env GOPATH 2>/dev/null)/bin/go"
 fi
 NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
 if [ -z "$NODE_BIN" ]; then
