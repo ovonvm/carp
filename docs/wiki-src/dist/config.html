@@ -30,7 +30,7 @@
 <table><thead><tr><th>平台 / 方式</th><th>配置位置</th><th>修改方式</th></tr></thead><tbody>
 <tr><td>Linux 安装包</td><td><code>/opt/carp/carp.env</code>（0600，systemd 通过 EnvironmentFile 读取）</td><td><code>sudo carp config</code> 或直接编辑，再 <code>sudo systemctl restart carp</code></td></tr>
 <tr><td>Linux 便携</td><td>无文件；启动参数 / 当前 shell 的环境变量</td><td><code>./carp serve -addr ... -data ...</code> 或 <code>export CARP_...</code></td></tr>
-<tr><td>Windows 控制面板</td><td><code>%APPDATA%\Carp\gui.json</code>（端口、profile、日志级别、Cookie 安全、开机自启、上次备份位置）</td><td>控制面板左栏「设置」修改后点「保存」</td></tr>
+<tr><td>Windows 控制面板</td><td><code>&lt;Carp.exe 目录&gt;\conf\gui.json</code>（端口、profile、日志级别、Cookie 安全、开机自启、上次备份位置）</td><td>控制面板左栏「设置」修改后点「保存」</td></tr>
 </tbody></table>
 <h2 id="62常用参数">6.2 常用参数</h2>
 <table><thead><tr><th>参数（命令行 / 环境变量）</th><th>默认</th><th>说明</th></tr></thead><tbody>
@@ -73,11 +73,11 @@ sudo systemctl restart carp</code></pre>
 <p>Linux 重启：<code>sudo systemctl restart carp</code>（<code>carp service restart</code> 会自动读取 <code>carp.env</code> 里的端口）；Windows：在控制面板「设置」里保存后，按日志提示停止再启动服务。</p>
 <h2 id="65windows控制面板配置">6.5 Windows 控制面板配置</h2>
 <p><code>gui.json</code> 由控制面板维护，一般不需要手工编辑。它保存：监听端口、内存 profile（<code>low</code>/<code>high</code>）、日志级别、Cookie 安全策略、是否开机自启、上次备份位置。修改后点「保存」，面板会重启核心并做健康检查；端口改了之后浏览器地址也要跟着改。</p>
-<p>数据目录不在 <code>gui.json</code> 里，它固定为 <code>Carp.exe</code> 同目录（不可写时回退 <code>%LOCALAPPDATA%\Carp</code>），面板「设置」里只读展示。</p>
+<p>数据目录不在 <code>gui.json</code> 里，它固定为 <code>Carp.exe</code> 同目录的 <code>data\</code>（exe 目录不可写时整棵树回退 <code>%LOCALAPPDATA%\Carp</code>），面板「设置」里只读展示。</p>
 <h2 id="66命令行与服务的一致性">6.6 命令行与服务的一致性</h2>
 <ul>
   <li>安装方式下，systemd 启动的是 <code>carp serve</code>，它会读取 <code>carp.env</code>；直接运行 <code>carp serve</code> 时<strong>不读</strong> <code>carp.env</code>，请用参数或当前 shell 的环境变量（避免同时启动两个实例争用数据库）。</li>
-  <li>Windows 控制面板与命令行核心共用同一份数据目录（面板用 <code>Carp.exe</code> 同目录，命令行用 <code>-data</code> 指到同一个目录），不要同时运行两者；面板启动时若发现外部核心已在跑，会询问是否结束并接管。</li>
+  <li>Windows 控制面板与命令行核心共用同一份数据目录（面板用 <code>Carp.exe\data</code>，命令行用 <code>-data</code> 指到同一个目录），不要同时运行两者；面板启动时若发现外部核心已在跑，会询问是否结束并接管。</li>
 </ul>
 
     </article>

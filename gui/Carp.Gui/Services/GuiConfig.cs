@@ -4,8 +4,9 @@ using System.Text.Json;
 namespace Carp.Gui.Services;
 
 /// <summary>
-/// GUI 配置。数据目录默认就是 Carp 程序所在目录（便携式布局），
-/// 配置与备份记录放在 %APPDATA%\Carp\gui.json；exe 目录不可写时可回退到 %LOCALAPPDATA%\Carp。
+/// GUI 配置。便携式布局：Carp.exe 旁边固定三样东西——
+/// <c>data\</c>（核心数据）、<c>conf\</c>（gui.json、日志、备份）、<c>core\</c>（释放的 carp-core.exe）。
+/// 如果 exe 目录不可写（例如解压到 Program Files），整棵树回退到 %LOCALAPPDATA%\Carp。
 /// </summary>
 public sealed class GuiConfig
 {
@@ -28,50 +29,63 @@ public sealed class GuiConfig
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    /// <summary>Carp 程序（GUI exe）所在目录，同时是默认数据目录。</summary>
+    /// <summary>Carp 程序（GUI exe）所在目录；其下固定有 data\、conf\、core\。</summary>
     public static string ExeDir => Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
 
-    /// <summary>%APPDATA%\Carp，存放 gui.json。</summary>
-    public static string UserRoot => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Carp");
-
-    /// <summary>%LOCALAPPDATA%\Carp，exe 目录不可写时的数据目录回退位置。</summary>
+    /// <summary>%LOCALAPPDATA%\Carp，exe 目录不可写时的整棵树回退位置。</summary>
     public static string LocalRoot => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Carp");
 
-    public static string ConfigPath => Path.Combine(UserRoot, "gui.json");
+    private static string? confDir;
 
-    public static string DefaultDataDir => ExeDir;
+    /// <summary>conf 目录：gui.json、日志、备份。exe 目录不可写时回退到 %LOCALAPPDATA%\Carp\conf。</summary>
+    public static string ConfDir => confDir ??= ResolveWritableDir(
+        Path.Combine(ExeDir, "conf"),
+        Path.Combine(LocalRoot, "conf"));
 
-    public static string LocalDataDir => LocalRoot;
+    public static string ConfigPath => Path.Combine(ConfDir, "gui.json");
+
+    /// <summary>默认数据目录：&lt;exe&gt;\data。</summary>
+    public static string DefaultDataDir => Path.Combine(ExeDir, "data");
+
+    /// <summary>回退数据目录：%LOCALAPPDATA%\Carp\data。</summary>
+    public static string LocalDataDir => Path.Combine(LocalRoot, "data");
 
     /// <summary>
-    /// 内嵌核心的释放目录：默认放在 exe 旁边的 core/，便携包把整个目录搬走即可。
-    /// 如果 exe 目录不可写（例如解压到 Program Files），自动回退到用户目录。
+    /// 内嵌核心的释放目录：&lt;exe&gt;\core，便携包把整个目录搬走即可。
+    /// exe 目录不可写时回退到用户目录。
     /// </summary>
-    public static string LocalCoreDir
+    public static string LocalCoreDir => ResolveWritableDir(
+        Path.Combine(ExeDir, "core"),
+        Path.Combine(LocalRoot, "core"));
+
+    /// <summary>没有记住上次备份位置时的默认备份目录。</summary>
+    public static string BackupFallbackDir => Path.Combine(ConfDir, "backups");
+
+    /// <summary>依次尝试创建并写入探测文件，返回第一个可写目录（都不可写时返回首选）。</summary>
+    private static string ResolveWritableDir(string preferred, string fallback)
     {
-        get
+        foreach (var candidate in new[] { preferred, fallback })
         {
-            var portable = Path.Combine(ExeDir, "core");
             try
             {
-                Directory.CreateDirectory(portable);
-                return portable;
+                Directory.CreateDirectory(candidate);
+                var probe = Path.Combine(candidate, ".carp-write-test");
+                File.WriteAllText(probe, "1");
+                File.Delete(probe);
+                return candidate;
             }
             catch (UnauthorizedAccessException)
             {
-                return Path.Combine(LocalRoot, "core");
+                // 尝试下一个位置。
             }
             catch (IOException)
             {
-                return Path.Combine(LocalRoot, "core");
+                // 尝试下一个位置。
             }
         }
+        return preferred;
     }
-
-    /// <summary>没有记住上次备份位置时的默认备份目录。</summary>
-    public static string BackupFallbackDir => Path.Combine(LocalRoot, "backups");
 
     public static GuiConfig Load()
     {
@@ -93,6 +107,15 @@ public sealed class GuiConfig
         }
         var fresh = new GuiConfig();
         fresh.Normalize();
+        try
+        {
+            // 首次运行就把默认配置落盘：关于页里的 conf\gui.json 真实存在，用户也能直接改。
+            fresh.Save();
+        }
+        catch
+        {
+            // 写不了配置不影响启动，下次保存设置时再写。
+        }
         return fresh;
     }
 
@@ -129,7 +152,7 @@ public sealed class GuiConfig
 
     public void Save()
     {
-        Directory.CreateDirectory(UserRoot);
+        Directory.CreateDirectory(ConfDir);
         File.WriteAllText(ConfigPath, JsonSerializer.Serialize(this, JsonOptions));
     }
 }

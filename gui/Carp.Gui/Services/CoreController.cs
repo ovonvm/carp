@@ -17,7 +17,7 @@ public sealed class CoreController : IDisposable
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    /// <summary>去掉单文件发布解压目录差异后的“程序所在目录”，也就是默认数据目录。</summary>
+    /// <summary>去掉单文件发布解压目录差异后的“程序所在目录”，其下有 data\、conf\、core\。</summary>
     public static string Root => AppContext.BaseDirectory;
 
     private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(2) };
@@ -301,6 +301,8 @@ public sealed class CoreController : IDisposable
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         };
+        // 核心的日志目录也指到 conf\logs，data\ 里只留数据。
+        psi.Environment["CARP_LOG_DIR"] = Path.Combine(GuiConfig.ConfDir, "logs");
 
         var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
         proc.OutputDataReceived += (_, e) =>

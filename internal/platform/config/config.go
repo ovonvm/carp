@@ -279,7 +279,14 @@ func (c Config) StorageDir() string { return filepath.Join(c.DataDir, "storage")
 func (c Config) BootstrapDir() string { return filepath.Join(c.DataDir, "bootstrap") }
 
 // LogDir is reserved for file logging; M0 logs to stdout only.
-func (c Config) LogDir() string { return filepath.Join(c.DataDir, "logs") }
+// CARP_LOG_DIR overrides it so the Windows panel can keep every log under conf\logs
+// while the data directory stays purely data.
+func (c Config) LogDir() string {
+	if dir := strings.TrimSpace(os.Getenv("CARP_LOG_DIR")); dir != "" {
+		return dir
+	}
+	return filepath.Join(c.DataDir, "logs")
+}
 
 // EnsureDirs creates the data directories with restrictive permissions for
 // bootstrap material.

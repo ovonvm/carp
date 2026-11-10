@@ -31,7 +31,7 @@
   <li>确认服务在跑：<code>curl http://127.0.0.1:50011/health</code>（Linux 用 <code>sudo carp service status</code> 或 <code>systemctl status carp</code>）。</li>
   <li>默认只监听 <code>127.0.0.1:50011</code>，<strong>其它电脑通过局域网打不开是正常的</strong>：请通过反向代理对外，或把监听地址改为 <code>0.0.0.0:50011</code>。</li>
   <li>端口被占用时改端口（<code>CARP_ADDR</code> 或启动参数），注意防火墙放行。</li>
-  <li>看日志：Linux <code>journalctl -u carp -n 100</code>；Windows 看面板下方「运行日志」，或数据目录下 <code>logs\gui-YYYYMMDD.log</code>。</li>
+  <li>看日志：Linux <code>journalctl -u carp -n 100</code>；Windows 看面板下方「运行日志」，或 <code>conf\logs\gui-YYYYMMDD.log</code>。</li>
   <li>用 <code>carp doctor</code>（Windows 控制面板快捷操作「运行自检」）检查数据目录、端口、数据库。</li>
 </ol>
 <p><strong>启动/停止/重启没有反应或失败</strong></p>
@@ -87,7 +87,7 @@
 </tbody></table>
 <h2 id="177存储与数据">17.7 存储与数据</h2>
 <table><thead><tr><th>问题</th><th>说明</th></tr></thead><tbody>
-<tr><td>数据存在哪</td><td>默认在可执行文件旁的 <code>data/</code>；Windows 面板版本在 <code>Carp.exe</code> 同目录（<code>db</code>、<code>storage</code>、<code>logs</code>），不可写时回退 <code>%LOCALAPPDATA%\Carp</code></td></tr>
+<tr><td>数据存在哪</td><td>默认在可执行文件旁的 <code>data/</code>；Windows 面板版本在 <code>Carp.exe</code> 同目录的 <code>data\</code>（<code>db</code>、<code>storage</code>），配置与日志在 <code>conf\</code>，不可写时整棵树回退 <code>%LOCALAPPDATA%\Carp</code></td></tr>
 <tr><td>能直接改磁盘上的文件吗</td><td>不要。请通过网页/API 操作，否则数据库与文件会不一致</td></tr>
 <tr><td>如何备份</td><td>见 07：Linux 用安装包自带备份脚本，Windows 用面板「立即备份」</td></tr>
 <tr><td>磁盘快满了</td><td>清空回收站、删除大文件，或增加/切换存储（「存储」页）</td></tr>
@@ -98,10 +98,10 @@
 <tr><td>内存占用多大</td><td>按低配置档设计运行在 512MB 级；实际取决于并发与预览</td></tr>
 <tr><td>Linux 怎么升级</td><td><code>sudo carp upgrade --binary &lt;新二进制&gt;</code>（自动备份、失败回滚），详见 07</td></tr>
 <tr><td>Windows 怎么升级</td><td>面板「停止」→ 关闭面板 → 用新的 <code>Carp.exe</code> 覆盖旧文件 → 双击启动；数据、<code>core\</code>、<code>logs\</code> 不受影响</td></tr>
-<tr><td>怎么卸载</td><td>Linux <code>sudo carp uninstall</code>（会删数据，谨慎）；Windows 没有安装程序，删掉 <code>Carp.exe</code> 所在文件夹即可（会一并删数据），另可删 <code>%APPDATA%\Carp\gui.json</code></td></tr>
+<tr><td>怎么卸载</td><td>Linux <code>sudo carp uninstall</code>（会删数据，谨慎）；Windows 没有安装程序，删掉 <code>Carp.exe</code> 所在文件夹即可（<code>data\</code>、<code>conf\</code> 一并删除，会丢数据）</td></tr>
 <tr><td>支持 Docker / 多节点 / 对象存储吗</td><td>不支持，当前只提供单机单实例部署</td></tr>
 <tr><td>有手机 App / WebDAV 吗</td><td>没有；手机可直接用浏览器访问</td></tr>
-<tr><td>日志在哪</td><td>Linux <code>journalctl -u carp</code>；Windows 面板下方「运行日志」/ 数据目录下 <code>logs\gui-YYYYMMDD.log</code></td></tr>
+<tr><td>日志在哪</td><td>Linux <code>journalctl -u carp</code>；Windows 面板下方「运行日志」/ <code>conf\logs\gui-YYYYMMDD.log</code></td></tr>
 </tbody></table>
 <h2 id="179还能问谁">17.9 还能问谁</h2>
 <ul>

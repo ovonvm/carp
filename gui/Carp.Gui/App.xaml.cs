@@ -13,6 +13,8 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         StartMinimized = Array.Exists(e.Args, a => string.Equals(a, "--minimized", StringComparison.OrdinalIgnoreCase));
+        // 让核心（含 backup/doctor 等子进程）把日志写进 conf\logs，而不是 data\logs。
+        Environment.SetEnvironmentVariable("CARP_LOG_DIR", System.IO.Path.Combine(GuiConfig.ConfDir, "logs"));
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {

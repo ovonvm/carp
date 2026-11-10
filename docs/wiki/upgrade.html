@@ -46,7 +46,7 @@ sudo carp upgrade --binary ./carp-v2.2.1 --prefix /opt/carp --port 50011</code><
   <li>关闭面板，用新的 <code>Carp.exe</code> 覆盖旧文件（先备份数据，见 7.3）。</li>
   <li>双击打开，点「启动」，确认能正常登录。</li>
 </ol>
-<p>数据、<code>core\</code>、<code>logs\</code> 都在 <code>Carp.exe</code> 同目录，覆盖 exe 不影响数据；内嵌核心按 SHA-256 校验，版本不同会自动重新释放。</p>
+<p><code>data\</code>、<code>conf\</code>、<code>core\</code> 都在 <code>Carp.exe</code> 同目录，覆盖 exe 不影响数据；内嵌核心按 SHA-256 校验，版本不同会自动重新释放。</p>
 <h3 id="便携方式">便携方式</h3>
 <p>停止进程，替换二进制，重新 <code>./carp serve</code> 即可。</p>
 <h2 id="73备份">7.3 备份</h2>
@@ -78,10 +78,10 @@ sudo /opt/carp/scripts/restore.sh --snapshot &lt;时间戳&gt; --drill</code></p
 <pre><code class="language-bash">sudo systemctl stop carp
 sudo /opt/carp/scripts/restore.sh --snapshot &lt;时间戳&gt; --apply --yes
 sudo systemctl start carp</code></pre>
-<p>也可以把前后的 <code>systemctl</code> 换成 <code>carp service stop/start</code>，它会打印进度和结果；失败时按输出附带的 <code>journalctl -u carp</code> 最近日志排查。恢复会覆盖数据目录，务必确认快照时间戳。Windows 恢复：面板点「停止」→ 关闭面板 → 解压备份 zip，把其中的 <code>db</code>、<code>storage</code> 覆盖到 <code>Carp.exe</code> 同目录 → 双击启动 → 用「重置 root 密码」重设密码。</p>
+<p>也可以把前后的 <code>systemctl</code> 换成 <code>carp service stop/start</code>，它会打印进度和结果；失败时按输出附带的 <code>journalctl -u carp</code> 最近日志排查。恢复会覆盖数据目录，务必确认快照时间戳。Windows 恢复：面板点「停止」→ 关闭面板 → 解压备份 zip，把其中的 <code>db</code>、<code>storage</code> 覆盖到 <code>Carp.exe\data\</code> → 双击启动 → 用「重置 root 密码」重设密码。</p>
 <h2 id="75迁移数据目录换机器">7.5 迁移数据目录 / 换机器</h2>
 <p><strong>Linux</strong>：停止服务 → 用 <code>rsync -a</code> 复制 <code>data/</code> 到新位置 → 修改 <code>CARP_DATA_DIR</code>（或 <code>carp config</code>）→ 启动 → <code>carp doctor</code> 复核。注意属主要改成运行用户。</p>
-<p><strong>Windows</strong>：面板不提供修改数据目录的入口，数据目录固定为 <code>Carp.exe</code> 同目录（不可写时回退 <code>%LOCALAPPDATA%\Carp</code>）。要搬家就把整个文件夹复制到新位置；跨机迁移用「立即备份」打包后在新位置解压。</p>
+<p><strong>Windows</strong>：面板不提供修改数据目录的入口，数据目录固定为 <code>Carp.exe</code> 同目录的 <code>data\</code>（exe 目录不可写时整棵树回退 <code>%LOCALAPPDATA%\Carp</code>）。要搬家就把整个文件夹复制到新位置；跨机迁移用「立即备份」打包后在新位置解压。</p>
 <p><strong>换机器</strong>：在新机器安装同版本 → 停止服务 → 用备份恢复数据目录 → 启动并验证登录、文件列表、下载。域名与反向代理配置需要在新机器上重建。</p>
 <h2 id="76回滚">7.6 回滚</h2>
 <ul>

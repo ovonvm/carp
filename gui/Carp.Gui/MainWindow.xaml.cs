@@ -70,14 +70,14 @@ public partial class MainWindow : Window
 
     private async Task BootstrapAsync()
     {
-        // 1) 数据目录必须可写：默认就是 exe 所在目录。
+        // 1) 数据目录必须可写：默认是 exe 旁边的 data\。
         var writable = SystemProbe.EnsureWritable(_config.DataDir);
         if (!writable.Ok)
         {
             var switchToLocal = ChoiceDialog.Ask(
                 this,
                 "数据目录不可写",
-                "Carp 的数据目录默认是程序所在目录，当前无法写入。可以改用 %LOCALAPPDATA%\\Carp 后继续。",
+                "Carp 的数据目录默认是程序目录下的 data，当前无法写入。可以改用 %LOCALAPPDATA%\\Carp\\data 后继续。",
                 $"数据目录：{_config.DataDir}\r\n{writable.Error}",
                 "改用 %LOCALAPPDATA%\\Carp",
                 "退出");
@@ -583,9 +583,9 @@ public partial class MainWindow : Window
 
         var initial = !string.IsNullOrWhiteSpace(_config.LastBackupDir) && Directory.Exists(_config.LastBackupDir)
             ? _config.LastBackupDir
-            : Directory.Exists(Path.Combine(_config.DataDir, "backups"))
-                ? Path.Combine(_config.DataDir, "backups")
-                : _config.DataDir;
+            : Directory.Exists(GuiConfig.BackupFallbackDir)
+                ? GuiConfig.BackupFallbackDir
+                : GuiConfig.ConfDir;
 
         using var dialog = new Forms.FolderBrowserDialog
         {
@@ -897,13 +897,18 @@ public partial class MainWindow : Window
             ? _config.LastBackupPath
             : !string.IsNullOrWhiteSpace(_config.LastBackupDir)
                 ? _config.LastBackupDir
-                : Path.Combine(_config.DataDir, "backups");
+                : GuiConfig.BackupFallbackDir;
         BackupPathText.Text = ShortenPath(location);
         BackupPathText.ToolTip = location;
     }
 
     private string ShortenPath(string path)
     {
+        var conf = GuiConfig.ConfDir.TrimEnd(Path.DirectorySeparatorChar);
+        if (path.StartsWith(conf, StringComparison.OrdinalIgnoreCase))
+        {
+            return "conf" + path[conf.Length..];
+        }
         var data = _config.DataDir.TrimEnd(Path.DirectorySeparatorChar);
         if (path.StartsWith(data, StringComparison.OrdinalIgnoreCase))
         {

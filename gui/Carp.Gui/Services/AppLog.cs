@@ -5,8 +5,8 @@ using System.Text;
 namespace Carp.Gui.Services;
 
 /// <summary>
-/// GUI 落盘日志：<c>&lt;exeDir&gt;\logs\gui-yyyyMMdd.log</c>，按天切分，最多保留 7 天。
-/// exe 目录不可写时自动回退到 %LOCALAPPDATA%\Carp\logs。
+/// GUI 落盘日志：<c>&lt;exeDir&gt;\conf\logs\gui-yyyyMMdd.log</c>，按天切分，最多保留 7 天。
+/// exe 目录不可写时自动回退到 %LOCALAPPDATA%\Carp\conf\logs。
 /// </summary>
 public static class AppLog
 {
@@ -24,8 +24,8 @@ public static class AppLog
     {
         foreach (var candidate in new[]
                  {
-                     Path.Combine(GuiConfig.ExeDir, "logs"),
-                     Path.Combine(GuiConfig.LocalRoot, "logs"),
+                     Path.Combine(GuiConfig.ConfDir, "logs"),
+                     Path.Combine(GuiConfig.LocalRoot, "conf", "logs"),
                  })
         {
             try

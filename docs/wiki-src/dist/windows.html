@@ -29,18 +29,18 @@
 <h2 id="31系统要求">3.1 系统要求</h2>
 <table><thead><tr><th>项目</th><th>要求</th></tr></thead><tbody>
 <tr><td>系统</td><td>Windows 10 / 11 x64</td></tr>
-<tr><td>权限</td><td>普通用户即可；数据写在 <code>Carp.exe</code> 所在目录</td></tr>
+<tr><td>权限</td><td>普通用户即可；数据写在 <code>Carp.exe</code> 同目录的 <code>data\</code>、配置日志在同目录的 <code>conf\</code></td></tr>
 <tr><td>位置</td><td>建议单独建一个文件夹存放 <code>Carp.exe</code>，避免中文路径与 <code>Program Files</code>（该目录不可写）</td></tr>
 <tr><td>网络</td><td>默认只监听本机 <code>127.0.0.1:50011</code></td></tr>
 </tbody></table>
-<p>程序是便携式布局：<strong>整个文件夹拷走就等于搬家</strong>，数据、核心、日志都在里面。</p>
+<p>程序是便携式布局：<code>Carp.exe</code> 旁边固定只有 <code>data\</code>、<code>conf\</code>、<code>core\</code> 三个文件夹，<strong>整个文件夹拷走就等于搬家</strong>。</p>
 <h2 id="32第一次运行">3.2 第一次运行</h2>
 <ol>
   <li>把 <code>Carp.exe</code> 放进单独文件夹，双击运行。</li>
   <li>首次启动会自动创建管理员账号 <code>admin</code>，并弹出「账号与密码」窗口显示初始密码（只显示一次）。</li>
 </ol>
 <ul>
-  <li>同一密码也写在 <code>&lt;数据目录&gt;\bootstrap\initial-admin.txt</code>；修改密码后该文件自动删除。</li>
+  <li>同一密码也写在 <code>data\bootstrap\initial-admin.txt</code>；修改密码后该文件自动删除。</li>
   <li>关掉弹窗后仍可用快捷操作「启动 / 停止」旁边的日志确认，或用记事本打开上面这个文件。</li>
 </ul>
 <ol>
@@ -54,28 +54,29 @@
 <tr><td>状态卡</td><td>打开网盘</td><td>用默认浏览器打开 <code>http://127.0.0.1:50011</code></td></tr>
 <tr><td>状态卡</td><td>启动 / 停止</td><td>停止会优雅关闭核心；启动会等核心就绪再显示运行中</td></tr>
 <tr><td>快速操作</td><td>启动 / 停止</td><td>与状态卡同一动作，便于快速点</td></tr>
-<tr><td>快速操作</td><td>打开数据目录</td><td>资源管理器打开 <code>Carp.exe</code> 所在目录</td></tr>
+<tr><td>快速操作</td><td>打开数据目录</td><td>资源管理器打开 <code>data\</code> 目录</td></tr>
 <tr><td>快速操作</td><td>运行自检</td><td>在面板下方输出 <code>carp doctor</code> 的检查结果</td></tr>
 <tr><td>快速操作</td><td>重置 root 密码</td><td>二次确认后只重置 <code>root</code> 账号密码，并显示一次新密码</td></tr>
 <tr><td>备份卡</td><td>立即备份</td><td>选择目标目录，把数据打成 zip；运行中会先做 SQLite 快照</td></tr>
 <tr><td>备份卡</td><td>上次备份</td><td>显示上次备份时间与位置</td></tr>
-<tr><td>运行日志</td><td>查看 / 清空</td><td>面板日志滚动显示，最近日志见 <code>logs\gui-YYYYMMDD.log</code></td></tr>
+<tr><td>运行日志</td><td>查看 / 清空</td><td>面板日志滚动显示，最近日志见 <code>conf\logs\gui-YYYYMMDD.log</code></td></tr>
 <tr><td>左栏「设置」</td><td>服务与存储设置</td><td>端口、profile（low/high）、日志级别、cookie-secure、开机自启；数据目录只读展示</td></tr>
 <tr><td>左栏「打开数据目录 / 打开日志文件」</td><td>快捷入口</td><td>资源管理器定位到目录或日志文件</td></tr>
 <tr><td>左栏「关于」</td><td>版本信息</td><td>GUI 版本、核心版本、核心路径、数据目录、配置文件路径</td></tr>
 </tbody></table>
 <h2 id="34数据放在哪">3.4 数据放在哪</h2>
 <table><thead><tr><th>路径（相对 <code>Carp.exe</code> 所在目录）</th><th>内容</th></tr></thead><tbody>
-<tr><td><code>db\carp.db</code></td><td>数据库（SQLite，WAL 模式）</td></tr>
-<tr><td><code>storage\</code></td><td>文件内容（按内容哈希存放）</td></tr>
-<tr><td><code>bootstrap\initial-admin.txt</code></td><td>初始管理员信息（改密后删除）</td></tr>
-<tr><td><code>tmp\</code></td><td>上传/转换临时文件</td></tr>
-<tr><td><code>logs\gui-YYYYMMDD.log</code></td><td>面板日志，按天切分、保留 7 天</td></tr>
+<tr><td><code>data\db\carp.db</code></td><td>数据库（SQLite，WAL 模式）</td></tr>
+<tr><td><code>data\storage\</code></td><td>文件内容（按内容哈希存放）</td></tr>
+<tr><td><code>data\bootstrap\initial-admin.txt</code></td><td>初始管理员信息（改密后删除）</td></tr>
+<tr><td><code>data\tmp\</code></td><td>上传/转换临时文件</td></tr>
+<tr><td><code>conf\gui.json</code></td><td>面板配置（端口、profile、日志级别、自启、上次备份位置）</td></tr>
+<tr><td><code>conf\logs\gui-YYYYMMDD.log</code></td><td>面板日志，按天切分、保留 7 天</td></tr>
+<tr><td><code>conf\backups\</code></td><td>「立即备份」没选目录时的默认输出位置</td></tr>
 <tr><td><code>core\carp-core.exe</code></td><td>首次启动释放的服务核心（带 <code>.sha256</code> 校验文件）</td></tr>
-<tr><td><code>%APPDATA%\Carp\gui.json</code></td><td>面板配置（端口、profile、日志级别、自启、上次备份位置）</td></tr>
 </tbody></table>
-<p>如果 <code>Carp.exe</code> 目录不可写（例如放进了 <code>Program Files</code>），面板会自动把数据目录回退到 <code>%LOCALAPPDATA%\Carp</code> 并在日志里说明。</p>
-<blockquote><p><strong>从旧版本升级注意</strong>：旧面板把数据放在 <code>%ProgramData%\Carp\data</code>，本版本<strong>不会自动迁移</strong>，升级后是空数据。需要保留旧数据时，把旧 <code>%ProgramData%\Carp\data</code> 里的 <code>db\</code>、<code>storage\</code>、<code>bootstrap\</code> 原样拷贝到 <code>Carp.exe</code> 同目录，再启动面板。</p></blockquote>
+<p>如果 <code>Carp.exe</code> 目录不可写（例如放进了 <code>Program Files</code>），面板会整棵树回退到 <code>%LOCALAPPDATA%\Carp</code>（下有同样结构的 <code>data\</code>、<code>conf\</code>、<code>core\</code>）并在日志里说明。</p>
+<blockquote><p><strong>从旧版本升级注意</strong>：旧面板把数据放在 <code>%ProgramData%\Carp\data</code>，本版本<strong>不会自动迁移</strong>，升级后是空数据。需要保留旧数据时，把旧 <code>%ProgramData%\Carp\data</code> 里的 <code>db\</code>、<code>storage\</code>、<code>bootstrap\</code> 原样拷贝到 <code>Carp.exe\data\</code>，再启动面板。</p></blockquote>
 <h2 id="35端口被占用怎么办">3.5 端口被占用怎么办</h2>
 <p>启动时如果 <code>50011</code> 被别的程序占用，面板会弹出提示，列出占用进程的 PID、进程名和可执行文件路径，并提供「结束进程」按钮（需要确认）。面板<strong>不会自动换端口</strong>——端口是与反向代理、书签、其它设备约定的契约，静默改掉更容易出问题。想换端口请到「设置」里改。</p>
 <h2 id="36让局域网里的其它设备访问">3.6 让局域网里的其它设备访问</h2>
@@ -88,7 +89,7 @@
 <h2 id="37升级">3.7 升级</h2>
 <ol>
   <li>面板点「停止」。</li>
-  <li>用新的 <code>Carp.exe</code> 覆盖旧文件（数据、<code>core\</code>、<code>logs\</code> 都在同目录，不受影响）。</li>
+  <li>用新的 <code>Carp.exe</code> 覆盖旧文件（<code>data\</code>、<code>conf\</code>、<code>core\</code> 都在同目录，不受影响）。</li>
   <li>重新双击运行，点「启动」。</li>
 </ol>
 <p>面板每次启动会按内嵌核心的 SHA-256 校验 <code>core\carp-core.exe</code>，版本不同会自动重新释放，不需要手工删 <code>core\</code>。数据库迁移在核心启动时自动执行。</p>
@@ -97,12 +98,12 @@
 <ol>
   <li>面板点「停止」，关闭窗口（核心会一起退出）。</li>
   <li>删除 <code>Carp.exe</code> 所在文件夹 —— <strong>这会删除所有数据</strong>，需要保留请先备份。</li>
-  <li>删除 <code>%APPDATA%\Carp\gui.json</code>（面板配置）。</li>
+  <li>没有额外残留：面板配置与日志都在 <code>conf\</code> 里，随文件夹一起删掉。</li>
   <li>如果开过「开机自启」，面板保存设置时会同步删除/写入 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code> 下的 <code>Carp</code> 项。</li>
 </ol>
 <h2 id="39只想用命令行核心">3.9 只想用命令行核心</h2>
 <p>面板本质是给 <code>core\carp-core.exe</code> 套了一层界面。也可以直接运行核心：</p>
-<pre><code class="language-powershell">&amp; &#34;.\core\carp-core.exe&#34; serve -data &#34;D:\Carp&#34; -addr 127.0.0.1:50011</code></pre>
+<pre><code class="language-powershell">&amp; &#34;.\core\carp-core.exe&#34; serve -data &#34;D:\Carp\data&#34; -addr 127.0.0.1:50011</code></pre>
 <p><code>-data</code> 指向面板的数据目录即可共用同一份数据，但<strong>不要与面板同时运行</strong>（端口会冲突，面板启动时会检测到外部核心并询问是否接管）。</p>
 
     </article>

@@ -87,7 +87,7 @@
 
                     <TextBlock Text="存储" Style="{StaticResource SectionTitle}" Margin="0,0,0,8" />
 
-                    <TextBlock Text="数据目录（默认是程序所在目录，只读）" Style="{StaticResource Label}" Margin="0,0,0,4" />
+                    <TextBlock Text="数据目录（默认是程序目录下的 data，只读）" Style="{StaticResource Label}" Margin="0,0,0,4" />
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
