@@ -96,9 +96,11 @@ func (d *DB) CreateShare(ctx context.Context, sc access.Scope, sh share.Share, i
 	insertShare := `INSERT INTO shares (id, token, owner_id, node_id, kind, password_hash,
 		expires_at, max_downloads, download_count, visits_count, created_at)
 		SELECT ?, ?, ?, id, ?, ?, ?, ?, 0, 0, ?
-		FROM nodes WHERE id = ? AND ` + accessSQL + ` AND state = 'active' AND parent_id IS NOT NULL`
+		FROM nodes WHERE id = ? AND ` + accessSQL + ` AND state = 'active' AND parent_id IS NOT NULL
+		  AND NOT ` + trashedAncestorSQL("")
 	insertItem := `INSERT INTO share_items (share_id, node_id)
-		SELECT ?, id FROM nodes WHERE id = ? AND ` + accessSQL + ` AND state = 'active' AND parent_id IS NOT NULL`
+		SELECT ?, id FROM nodes WHERE id = ? AND ` + accessSQL + ` AND state = 'active' AND parent_id IS NOT NULL
+		  AND NOT ` + trashedAncestorSQL("")
 	shareArgs := append([]any{sh.ID, sh.Token, sc.UserID, string(sh.Kind), sh.PasswordHash, expires,
 		sh.MaxDownloads, sh.CreatedAt.Unix(), sh.NodeID}, accessArgs...)
 	err := d.WithTx(ctx, func(tx *sql.Tx) error {
@@ -192,12 +194,23 @@ func (d *DB) ListShares(ctx context.Context, sc access.Scope, status string, lim
 		if err != nil {
 			return nil, 0, err
 		}
-		if err := d.loadShareItems(ctx, &sh); err != nil {
-			return nil, 0, err
-		}
 		out = append(out, sh)
 	}
-	return out, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	// Close the page cursor before loading members. The pool is tiny on the low
+	// memory profile (2 connections), so loading items while the page rows are
+	// still open would let two concurrent list calls deadlock on the pool.
+	if err := rows.Close(); err != nil {
+		return nil, 0, err
+	}
+	for i := range out {
+		if err := d.loadShareItems(ctx, &out[i]); err != nil {
+			return nil, 0, err
+		}
+	}
+	return out, total, nil
 }
 
 // RevokeShare marks a share revoked. Returns false when it was already revoked.

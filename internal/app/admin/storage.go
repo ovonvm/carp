@@ -130,6 +130,16 @@ func (s *Service) UpdateStoragePolicy(ctx context.Context, id int64, patch Stora
 		up.Enabled = patch.Enabled
 	}
 	if patch.IsDefault != nil && *patch.IsDefault {
+		// Becoming the default and being disabled in the same patch would leave
+		// the site without a writable default policy, so reject that combination
+		// instead of trusting the two independent checks above.
+		enabled := cur.Enabled
+		if patch.Enabled != nil {
+			enabled = *patch.Enabled
+		}
+		if !enabled {
+			return sqlstore.StoragePolicy{}, apperr.ErrInvalidState.WithReason(apperr.ReasonDefaultPolicy)
+		}
 		up.IsDefault = patch.IsDefault
 	}
 	p, err := s.db.UpdateStoragePolicy(ctx, id, up)

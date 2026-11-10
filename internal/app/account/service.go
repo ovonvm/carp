@@ -171,7 +171,7 @@ func (s *Service) CancelDeletion(ctx context.Context, token string) error {
 	if stored.UsedAt != nil || !now.Before(stored.ExpiresAt) {
 		return invalidToken()
 	}
-	userID, ok, err := s.db.MarkDeletionTokenUsed(ctx, hash, now)
+	userID, ok, err := s.db.CancelScheduledDeletion(ctx, hash, now)
 	if err != nil {
 		return err
 	}
@@ -184,9 +184,6 @@ func (s *Service) CancelDeletion(ctx context.Context, token string) error {
 		if apperr.CodeOf(err) == apperr.CodeNotFound {
 			return invalidToken()
 		}
-		return err
-	}
-	if err := s.db.SetUserDeletion(ctx, user.ID, identity.StatusActive, nil, nil); err != nil {
 		return err
 	}
 	s.audit(ctx, 0, "", "auth.deletion_cancel", user.ID, "success", "username="+user.Username)

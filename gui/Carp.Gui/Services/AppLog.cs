@@ -90,16 +90,11 @@ public static class AppLog
     {
         try
         {
-            foreach (var file in System.IO.Directory.EnumerateFiles(LogDirectory, "gui-*.log"))
+            // 核心（carp serve）也把日志写进同一目录，所以按修改时间清理所有
+            // *.log，而不是只认 gui- 前缀，否则核心日志会一直堆积。
+            foreach (var file in System.IO.Directory.EnumerateFiles(LogDirectory, "*.log"))
             {
-                var name = Path.GetFileNameWithoutExtension(file);
-                if (name.Length != 12 ||
-                    !DateTime.TryParseExact(name[4..], "yyyyMMdd", CultureInfo.InvariantCulture,
-                        DateTimeStyles.None, out var day))
-                {
-                    continue;
-                }
-                if ((now.Date - day.Date).TotalDays >= KeepDays)
+                if ((now - File.GetLastWriteTime(file)).TotalDays >= KeepDays)
                 {
                     File.Delete(file);
                 }

@@ -103,7 +103,15 @@ public sealed class GuiConfig
         }
         catch
         {
-            // 配置损坏时回退默认值。
+            // 配置损坏时保留一份副本再回退默认值，避免用户的数据目录设置被静默丢弃。
+            try
+            {
+                File.Copy(ConfigPath, ConfigPath + ".corrupt", overwrite: true);
+            }
+            catch
+            {
+                // 备份失败不影响启动。
+            }
         }
         var fresh = new GuiConfig();
         fresh.Normalize();
@@ -126,6 +134,11 @@ public sealed class GuiConfig
             DataDir = DefaultDataDir;
         }
         DataDir = DataDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        // "D:\" trims to "D:", which is a drive-relative path, not a root.
+        if (DataDir.Length == 2 && DataDir[1] == ':')
+        {
+            DataDir += Path.DirectorySeparatorChar;
+        }
         if (string.IsNullOrWhiteSpace(DataDir))
         {
             DataDir = DefaultDataDir;
@@ -153,6 +166,17 @@ public sealed class GuiConfig
     public void Save()
     {
         Directory.CreateDirectory(ConfDir);
-        File.WriteAllText(ConfigPath, JsonSerializer.Serialize(this, JsonOptions));
+        // Write to a sibling file first: a crash mid-write must not leave a
+        // truncated gui.json that the next start would silently treat as default.
+        var tmp = ConfigPath + ".tmp";
+        File.WriteAllText(tmp, JsonSerializer.Serialize(this, JsonOptions));
+        if (File.Exists(ConfigPath))
+        {
+            File.Replace(tmp, ConfigPath, null, ignoreMetadataErrors: true);
+        }
+        else
+        {
+            File.Move(tmp, ConfigPath);
+        }
     }
 }

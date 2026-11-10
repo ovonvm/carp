@@ -332,3 +332,51 @@ func TestPurgeNodeReferencedByCompletedUpload(t *testing.T) {
 		t.Fatalf("orphans = %v, want one blob", orphans)
 	}
 }
+
+// TestTrashedDirHidesDescendants guards every read path that used to leak
+// content out of the trash: trashing a directory marks only the root, so its
+// still-active descendants must stay unreachable until the root is restored.
+func TestTrashedDirHidesDescendants(t *testing.T) {
+	db, policyID := newTestDB(t)
+	ctx := context.Background()
+	u := seedUser(t, db, "alice", "user")
+	sc := access.UserScope(u.ID, false)
+	root, err := db.EnsureRoot(ctx, u.ID, policyID)
+	if err != nil {
+		t.Fatalf("root: %v", err)
+	}
+	dir, err := db.CreateDir(ctx, sc, root.ID, "secret", "secret")
+	if err != nil {
+		t.Fatalf("create dir: %v", err)
+	}
+	file := mkFile(t, db, sc, dir, "hidden.txt", "top secret")
+
+	if _, err := db.TrashNode(ctx, sc, dir.ID, time.Now().UTC()); err != nil {
+		t.Fatalf("trash dir: %v", err)
+	}
+
+	if _, err := db.NodeByID(ctx, sc, file.ID); apperr.CodeOf(err) != apperr.CodeNotFound {
+		t.Fatalf("node inside trash = %v, want not found", err)
+	}
+	if _, _, _, err := db.FileContent(ctx, sc, file.ID); apperr.CodeOf(err) != apperr.CodeNotFound {
+		t.Fatalf("content inside trash = %v, want not found", err)
+	}
+	if hits, total, err := db.SearchNodes(ctx, sc, "hidden", "", false, 20, 0); err != nil || total != 0 || len(hits) != 0 {
+		t.Fatalf("search inside trash = %d hits total=%d err=%v", len(hits), total, err)
+	}
+
+	// The trashed root itself stays reachable so the trash UI can show it.
+	if _, err := db.NodeByID(ctx, sc, dir.ID); err != nil {
+		t.Fatalf("trashed root = %v", err)
+	}
+
+	if _, err := db.RestoreNode(ctx, sc, dir.ID, time.Now().UTC()); err != nil {
+		t.Fatalf("restore: %v", err)
+	}
+	if _, err := db.NodeByID(ctx, sc, file.ID); err != nil {
+		t.Fatalf("node after restore = %v", err)
+	}
+	if _, total, err := db.SearchNodes(ctx, sc, "hidden", "", false, 20, 0); err != nil || total != 1 {
+		t.Fatalf("search after restore total=%d err=%v", total, err)
+	}
+}

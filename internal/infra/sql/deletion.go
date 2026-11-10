@@ -79,6 +79,52 @@ func (d *DB) SetUserDeletion(ctx context.Context, userID int64, status string, d
 	return nil
 }
 
+// CancelScheduledDeletion burns a cancel token and re-enables the account in a
+// single transaction. Splitting the two steps would let a crash (or a failed
+// second write) consume the one-time token while the account stays in its
+// deletion window, which locks the owner out for good.
+func (d *DB) CancelScheduledDeletion(ctx context.Context, hash string, now time.Time) (int64, bool, error) {
+	var userID int64
+	err := d.WithTx(ctx, func(tx *sql.Tx) error {
+		err := tx.QueryRowContext(ctx,
+			`SELECT user_id FROM deletion_tokens WHERE token_hash = ? AND used_at IS NULL`,
+			hash).Scan(&userID)
+		if err == sql.ErrNoRows {
+			return apperr.ErrNotFound
+		}
+		if err != nil {
+			return fmt.Errorf("sqlstore: select deletion token: %w", err)
+		}
+		res, err := tx.ExecContext(ctx,
+			`UPDATE deletion_tokens SET used_at = ? WHERE token_hash = ? AND used_at IS NULL`,
+			now.Unix(), hash)
+		if err != nil {
+			return fmt.Errorf("sqlstore: mark deletion token used: %w", err)
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return apperr.ErrNotFound
+		}
+		res, err = tx.ExecContext(ctx,
+			`UPDATE users SET status = ?, deleted_at = NULL, purge_after = NULL, updated_at = ?
+			 WHERE id = ?`,
+			identity.StatusActive, now.Unix(), userID)
+		if err != nil {
+			return fmt.Errorf("sqlstore: re-enable account: %w", err)
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return apperr.ErrNotFound
+		}
+		return nil
+	})
+	if err != nil {
+		if apperr.CodeOf(err) == apperr.CodeNotFound {
+			return 0, false, nil
+		}
+		return 0, false, err
+	}
+	return userID, true, nil
+}
+
 // UsersDueForPurge returns accounts whose grace window has expired, oldest
 // deadline first, capped at limit.
 func (d *DB) UsersDueForPurge(ctx context.Context, now time.Time, limit int) ([]identity.User, error) {

@@ -23,7 +23,8 @@ func (d *DB) FileContent(ctx context.Context, sc access.Scope, id int64) (files.
 		n.group_id, n.blob_id, n.size, n.storage_policy_id, n.state, n.mime, n.created_at, n.updated_at,
 		b.sha256
 		FROM nodes n LEFT JOIN blobs b ON b.id = n.blob_id
-		WHERE n.id = ? AND ` + accessSQL + ` AND n.state = 'active' AND n.kind = 'file'`
+		WHERE n.id = ? AND ` + accessSQL + ` AND n.state = 'active' AND n.kind = 'file'
+		  AND NOT ` + trashedAncestorSQL("n.")
 	var (
 		n        files.Node
 		parent   sql.NullInt64

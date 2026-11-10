@@ -24,6 +24,26 @@ const trashNodeColumns = `n.id, n.owner_id, n.parent_id, n.kind, n.name, n.name_
 const trashRootWhere = `n.owner_id = ? AND n.group_id IS NULL AND n.state = 'trashed'
 	AND NOT EXISTS (SELECT 1 FROM nodes p WHERE p.id = n.trashed_from AND p.state = 'trashed')`
 
+// trashedAncestorSQL reports whether the node referenced by prefix ("" or "n.")
+// sits under a trashed personal directory. Trashing a directory marks only the
+// root, so its descendants stay 'active' in the table; every read path has to
+// hide them explicitly or they leak through downloads, search and old shares.
+// Group trees have no trash (P1), so a group node is never hidden this way.
+func trashedAncestorSQL(prefix string) string {
+	// The outer node table is unaliased in some queries and aliased "n" in
+	// others; qualify the correlated columns either way, otherwise the inner
+	// "t" scope captures a bare name and the EXISTS never matches.
+	if prefix == "" {
+		prefix = "nodes."
+	}
+	p := func(name string) string { return prefix + name }
+	return `(` + p("group_id") + ` IS NULL AND EXISTS (
+		SELECT 1 FROM nodes t
+		WHERE t.state = 'trashed' AND t.group_id IS NULL AND t.owner_id = ` + p("owner_id") + `
+		  AND length(` + p("path") + `) > length(t.path)
+		  AND substr(` + p("path") + `, 1, length(t.path) + 1) = t.path || '/'))`
+}
+
 // TrashNode soft deletes a node: it keeps its place in the tree and its quota
 // reservation, but disappears from normal listings. Directories are marked
 // only at the root; their active children follow the parent out of the tree.

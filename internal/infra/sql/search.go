@@ -60,7 +60,7 @@ func (d *DB) searchScoped(ctx context.Context, sc access.Scope, base string, bas
 		kindCond = " AND n.kind = ?"
 		kindArgs = append(kindArgs, kind)
 	}
-	where := base + kindCond + ` AND n.state = 'active'`
+	where := base + kindCond + ` AND n.state = 'active' AND NOT ` + trashedAncestorSQL("n.")
 	args := append(append([]any{}, baseArgs...), kindArgs...)
 	from := ` FROM nodes n`
 	if utf8.RuneCountInString(folded) >= 3 {

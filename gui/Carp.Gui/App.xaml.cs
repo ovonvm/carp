@@ -9,12 +9,15 @@ namespace Carp.Gui;
 public partial class App : Application
 {
     // 单实例：第二次启动不会开第二个面板，而是把已经在跑的那个叫到前台。
-    private const string MutexName = @"Local\Carp.Gui.Instance";
-    private const string ShowEventName = @"Local\Carp.Gui.Show";
+    // 优先用 Global\ 作用域，这样「另一个用户会话」也不会再起一份抢同一个端口；
+    // 没有权限时退到 Local\（同一会话内仍然有效）。
+    private const string MutexBaseName = "Carp.Gui.Instance";
+    private const string ShowEventBaseName = "Carp.Gui.Show";
 
     private Mutex? _instanceMutex;
     private EventWaitHandle? _showEvent;
     private Thread? _showListener;
+    private string _scope = @"Local\";
 
     /// <summary>--minimized：登录自启时直接收进托盘，不弹窗口。</summary>
     public bool StartMinimized { get; private set; }
@@ -35,14 +38,18 @@ public partial class App : Application
             }
         };
 
-        _instanceMutex = new Mutex(initiallyOwned: true, MutexName, out var isFirstInstance);
+        if (!TryAcquireSingleInstance(out var isFirstInstance))
+        {
+            // 连互斥体都建不出来时，宁可让用户开第二份，也不要直接退出。
+            isFirstInstance = true;
+        }
         if (!isFirstInstance)
         {
             // 已有面板在跑：唤醒它，然后自己退出。
             AppLog.Info("[GUI] 检测到已有面板在运行，请求唤醒后退出");
             try
             {
-                if (EventWaitHandle.TryOpenExisting(ShowEventName, out var handle))
+                if (EventWaitHandle.TryOpenExisting(_scope + ShowEventBaseName, out var handle))
                 {
                     handle.Set();
                     handle.Dispose();
@@ -56,7 +63,14 @@ public partial class App : Application
             return;
         }
 
-        _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
+        try
+        {
+            _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, _scope + ShowEventBaseName);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("创建唤醒事件失败：" + ex.Message);
+        }
         _showListener = new Thread(ShowListenerLoop) { IsBackground = true, Name = "Carp.ShowListener" };
         _showListener.Start();
 
@@ -75,6 +89,38 @@ public partial class App : Application
         {
             window.Hide();
         }
+    }
+
+    /// <summary>先试 Global\，没有权限再退回 Local\；两者都失败返回 false。</summary>
+    private bool TryAcquireSingleInstance(out bool isFirstInstance)
+    {
+        isFirstInstance = true;
+        foreach (var scope in new[] { @"Global\", @"Local\" })
+        {
+            try
+            {
+                var mutex = new Mutex(initiallyOwned: true, scope + MutexBaseName, out var created);
+                _scope = scope;
+                _instanceMutex = mutex;
+                isFirstInstance = created;
+                if (!created)
+                {
+                    // 不是第一份，这个句柄留着也没用。
+                    mutex.Dispose();
+                    _instanceMutex = null;
+                }
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Global\ 需要权限，换 Local\ 再试。
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error($"创建单实例互斥体失败（{scope}）：{ex.Message}");
+            }
+        }
+        return false;
     }
 
     private void ShowListenerLoop()

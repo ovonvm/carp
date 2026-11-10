@@ -47,11 +47,15 @@ public sealed class NativeTray : IDisposable
     private readonly HwndSource _sink;
 
     private bool _added;
+    private int _retries;
     private bool _hintShown;
     private bool _disposed;
     private bool _running;
     private bool _readOnly = true;
     private bool _canControl = true;
+
+    /// <summary>托盘图标是否已注册成功；失败时关窗口不能再“收进托盘”。</summary>
+    public bool Registered => _added;
 
     public event Action? OpenRequested;
     public event Action? OpenWebRequested;
@@ -105,13 +109,38 @@ public sealed class NativeTray : IDisposable
         if (!Shell_NotifyIcon(NIM_ADD, ref data))
         {
             AppLog.Error($"[GUI] 托盘图标注册失败，Shell 错误码 {Marshal.GetLastWin32Error()}");
+            RetryLater();
             return;
         }
+        _retries = 0;
         data.uVersion = NOTIFYICON_VERSION_4;
         Shell_NotifyIcon(NIM_SETVERSION, ref data);
         _added = true;
         AppLog.Info("[GUI] 托盘图标已注册");
         Update(_running, _readOnly, string.Empty, _canControl);
+    }
+
+    /// <summary>Shell 刚启动时偶尔还没准备好托盘区，失败后隔 2 秒再试，最多 3 次。</summary>
+    private void RetryLater()
+    {
+        if (_retries >= 3 || _disposed)
+        {
+            return;
+        }
+        _retries++;
+        var timer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2),
+        };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (!_disposed)
+            {
+                Register();
+            }
+        };
+        timer.Start();
     }
 
     /// <summary>同步状态：图标、提示、菜单文字。</summary>

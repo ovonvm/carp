@@ -29,6 +29,7 @@ import (
 	storagereg "carp/internal/infra/storage"
 	"carp/internal/infra/storage/local"
 	"carp/internal/platform/apperr"
+	"carp/internal/platform/ctxio"
 	"carp/internal/platform/idgen"
 )
 
@@ -365,7 +366,7 @@ func (s *Service) download(ctx context.Context, t transfer.Transfer, startedAt t
 		max: transfer.MaxSize,
 	}
 	buf := make([]byte, copyBuffer)
-	written, err := io.CopyBuffer(cw, resp.Body, buf)
+	written, err := io.CopyBuffer(cw, ctxio.Reader{Ctx: ctx, R: resp.Body}, buf)
 	if err != nil {
 		_ = tmp.Close()
 		return classify(err)
@@ -389,6 +390,12 @@ func (s *Service) download(ctx context.Context, t transfer.Transfer, startedAt t
 
 	blob, created, err := s.db.InsertBlobInPolicy(ctx, policyID, sha, written)
 	if err != nil {
+		// The bytes are already published but no blobs row points at them; drop
+		// the object so a failed insert cannot leave an orphan that no GC pass
+		// ever finds (unless another writer created the row meanwhile).
+		if _, lookErr := s.db.BlobBySHAInPolicy(ctx, policyID, sha); lookErr != nil {
+			_ = store.Remove(sha)
+		}
 		return err
 	}
 

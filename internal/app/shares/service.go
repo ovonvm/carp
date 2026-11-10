@@ -107,7 +107,7 @@ func (s *Service) Create(ctx context.Context, p access.Principal, req CreateRequ
 			return share.Share{}, err
 		}
 		decision := access.Check(p, access.ActionShare, access.Resource{
-			Kind: access.ResourceNode, ID: node.ID, OwnerID: node.OwnerID,
+			Kind: access.ResourceNode, ID: node.ID, OwnerID: node.OwnerID, GroupID: node.GroupID,
 		})
 		if !decision.Allow {
 			return share.Share{}, apperr.ErrNotFound

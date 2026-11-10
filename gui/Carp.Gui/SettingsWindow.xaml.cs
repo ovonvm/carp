@@ -37,7 +37,8 @@ public partial class SettingsWindow : Window
         var logIndex = Array.IndexOf(LogLevels, config.LogLevel);
         LogLevelBox.SelectedIndex = logIndex >= 0 ? logIndex : 1;
         CookieSecureCheck.IsChecked = config.CookieSecure;
-        AutoStartCheck.IsChecked = AutoStart.IsEnabled();
+        var exeForAutoStart = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+        AutoStartCheck.IsChecked = AutoStart.IsEnabled(exeForAutoStart);
         DataDirBox.Text = config.DataDir;
         DataDirBox.ToolTip = config.DataDir;
         CorePathBox.Text = corePath;

@@ -351,13 +351,42 @@ public sealed class CoreController : IDisposable
                 ? "核心进程启动后立即退出，请查看运行日志。"
                 : lastError!);
         }
+        // 超时的核心继续跑只会占着端口，让界面状态和提示保持一致。
+        ForceKill();
         return (false, "核心启动超时（25 秒），请查看运行日志。");
+    }
+
+
+    /// <summary>Windows 命令行参数加引号：反斜杠在收尾引号前必须成对，否则会吞掉后面的参数。</summary>
+    private static string QuoteArg(string value)
+    {
+        var sb = new StringBuilder("\"");
+        var backslashes = 0;
+        foreach (var ch in value)
+        {
+            if (ch == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+            if (ch == '"')
+            {
+                sb.Append('\\', backslashes * 2 + 1).Append('"');
+            }
+            else
+            {
+                sb.Append('\\', backslashes).Append(ch);
+            }
+            backslashes = 0;
+        }
+        sb.Append('\\', backslashes * 2).Append('"');
+        return sb.ToString();
     }
 
     private string BuildArguments()
     {
         var sb = new StringBuilder();
-        sb.Append("serve -gui-control -data \"").Append(DataDir).Append('"');
+        sb.Append("serve -gui-control -data ").Append(QuoteArg(DataDir));
         sb.Append(" -addr 127.0.0.1:").Append(Config.Port);
         sb.Append(" -profile ").Append(Config.Profile);
         sb.Append(" -log-level ").Append(Config.LogLevel);
@@ -406,8 +435,11 @@ public sealed class CoreController : IDisposable
         {
             return (false, lastError ?? "服务未能启动，核心已回到停止状态。");
         }
+        // A timed-out start leaves a half-started core holding the port; kill it
+        // so the next attempt is not blocked by an orphan.
+        ForceKill();
         SetState(AppState.Stopped);
-        return (false, $"启动超时（{timeout.TotalSeconds:0} 秒），请查看运行日志。");
+        return (false, $"启动超时（{timeout.TotalSeconds:0} 秒），已强制结束核心进程，请查看运行日志。");
     }
 
     /// <summary>发送 STOP，并等待 state=stopped（默认 15 秒）。</summary>
@@ -440,8 +472,11 @@ public sealed class CoreController : IDisposable
         {
             return (false, lastError ?? "核心报告停止失败。");
         }
+        // Stop timed out: the core is unresponsive, so the only way back to a
+        // consistent state is to kill it instead of pretending it stopped.
+        ForceKill();
         SetState(AppState.Stopped);
-        return (false, $"停止超时（{timeout.TotalSeconds:0} 秒），请重试或强制结束核心进程。");
+        return (false, $"停止超时（{timeout.TotalSeconds:0} 秒），已强制结束核心进程，请重新启动服务。");
     }
 
     /// <summary>发送 SHUTDOWN 并等待进程退出（默认 5 秒）；返回是否已退出。</summary>
@@ -737,7 +772,7 @@ public sealed class CoreController : IDisposable
     /// <summary>carp.exe backup -data ... -out ... -no-secret，返回 zip 路径。</summary>
     public async Task<(bool Ok, string Message)> BackupAsync(string outDir)
     {
-        var args = $"backup -data \"{DataDir}\" -out \"{outDir}\" -no-secret";
+        var args = $"backup -data {QuoteArg(DataDir)} -out {QuoteArg(outDir)} -no-secret";
         var result = await CliRunner.RunAsync(CoreExe, args, Root, timeoutSeconds: 600).ConfigureAwait(false);
         var text = result.Output.Trim();
         if (!result.Ok)
@@ -754,7 +789,7 @@ public sealed class CoreController : IDisposable
     /// <summary>carp.exe reset-admin-password --root -data ... -password-stdin。</summary>
     public async Task<(bool Ok, string Message)> ResetRootPasswordAsync(string password)
     {
-        var args = $"reset-admin-password --root -data \"{DataDir}\" -password-stdin";
+        var args = $"reset-admin-password --root -data {QuoteArg(DataDir)} -password-stdin";
         var result = await CliRunner.RunAsync(CoreExe, args, Root, stdin: password + "\n", timeoutSeconds: 120)
             .ConfigureAwait(false);
         var text = result.Output.Trim();
@@ -764,7 +799,7 @@ public sealed class CoreController : IDisposable
     /// <summary>carp.exe doctor -data ...，返回原始输出。</summary>
     public async Task<(bool Ok, string Output)> RunDoctorAsync()
     {
-        var result = await CliRunner.RunAsync(CoreExe, $"doctor -data \"{DataDir}\"", Root, timeoutSeconds: 120)
+        var result = await CliRunner.RunAsync(CoreExe, $"doctor -data {QuoteArg(DataDir)}", Root, timeoutSeconds: 120)
             .ConfigureAwait(false);
         return (result.Ok, result.Output);
     }

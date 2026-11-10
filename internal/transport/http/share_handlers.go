@@ -397,6 +397,15 @@ func (s *Server) handlePublicShareContent(w http.ResponseWriter, r *http.Request
 	}
 	defer f.Close()
 	preview := r.URL.Query().Get("preview") == "1"
+	ct := mime
+	if ct == "" {
+		ct = "application/octet-stream"
+	}
+	// Only inline-previewable types may skip the download budget; otherwise
+	// "?preview=1" would let anyone stream a whole archive for free.
+	if preview && !previewInlineType(ct) {
+		preview = false
+	}
 	if r.Method != http.MethodHead && !preview {
 		if err := s.shares.Consume(r.Context(), sh); err != nil {
 			s.writeError(w, r, err)
@@ -405,10 +414,6 @@ func (s *Server) handlePublicShareContent(w http.ResponseWriter, r *http.Request
 	}
 	if node.Size > 0 {
 		w.Header().Set("Content-Length", strconv.FormatInt(node.Size, 10))
-	}
-	ct := mime
-	if ct == "" {
-		ct = "application/octet-stream"
 	}
 	w.Header().Set("Content-Type", ct)
 	disposition := contentDisposition(node.Name)

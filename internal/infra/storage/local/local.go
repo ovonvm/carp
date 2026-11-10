@@ -245,7 +245,8 @@ func (s *Store) CleanTemp() (int, error) {
 	for _, entry := range entries {
 		name := entry.Name()
 		if !strings.HasPrefix(name, "put-") && !strings.HasPrefix(name, "probe-") &&
-			!strings.HasPrefix(name, "up-") && !strings.HasPrefix(name, "merge-") {
+			!strings.HasPrefix(name, "up-") && !strings.HasPrefix(name, "merge-") &&
+			!strings.HasPrefix(name, "dl-") {
 			continue
 		}
 		if err := os.Remove(filepath.Join(s.tmpDir(), name)); err == nil {

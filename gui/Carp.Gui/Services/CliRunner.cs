@@ -83,7 +83,32 @@ public static class CliRunner
             {
                 // 忽略。
             }
-            return new CliResult(false, $"命令执行超时（{timeoutSeconds} 秒）。\n{output}");
+            // 进程已被杀掉；把超时前读到的 stdout/stderr 一并带回去，否则错误
+            // 消息里永远是空的。
+            var partial = output.ToString();
+            try
+            {
+                if (await Task.WhenAny(stdout, Task.Delay(1500)).ConfigureAwait(false) == stdout)
+                {
+                    partial += await stdout.ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // 忽略读取失败。
+            }
+            try
+            {
+                if (await Task.WhenAny(stderr, Task.Delay(1500)).ConfigureAwait(false) == stderr)
+                {
+                    partial += await stderr.ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // 忽略读取失败。
+            }
+            return new CliResult(false, $"命令执行超时（{timeoutSeconds} 秒）。\n{partial}");
         }
 
         output.Append(await stdout.ConfigureAwait(false));

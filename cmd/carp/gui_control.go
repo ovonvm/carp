@@ -126,11 +126,17 @@ func runGUIControl(ctx context.Context, cfg config.Config, handler stdhttp.Handl
 		go func() {
 			defer serveWG.Done()
 			err := srv.Serve(listener)
-			if err != nil && err != stdhttp.ErrServerClosed {
-				log.Error("http server failed", "err", err)
-				mu.Lock()
+			if err == nil || err == stdhttp.ErrServerClosed {
+				return
+			}
+			log.Error("http server failed", "err", err)
+			// Never block on mu here: stopLocked holds it while waiting for this
+			// goroutine, so a blocking Lock would deadlock the control channel.
+			// When the lock is busy the stop path already reports the state.
+			if mu.TryLock() {
 				writeGUIEvent(guiEvent{Event: "error", State: "stopped", Error: err.Error()})
 				running = false
+				_ = os.Remove(pidPath)
 				mu.Unlock()
 			}
 		}()
@@ -149,6 +155,7 @@ func runGUIControl(ctx context.Context, cfg config.Config, handler stdhttp.Handl
 	}()
 
 	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for scanner.Scan() {
 		cmd := strings.ToUpper(strings.TrimSpace(scanner.Text()))
 		switch cmd {
@@ -173,6 +180,12 @@ func runGUIControl(ctx context.Context, cfg config.Config, handler stdhttp.Handl
 		default:
 			writeGUIEvent(guiEvent{Event: "error", Error: "unknown command: " + cmd})
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		// A read error is not a shutdown request; report it so the panel does
+		// not silently lose the core's control channel.
+		writeGUIEvent(guiEvent{Event: "error", Error: "stdin: " + err.Error()})
+		log.Error("gui-control stdin failed", "err", err)
 	}
 	shutdown()
 	return 0

@@ -49,7 +49,8 @@ func (d *DB) NodeByID(ctx context.Context, sc access.Scope, id int64) (files.Nod
 		return files.Node{}, err
 	}
 	accessSQL, accessArgs := nodeAccessSQL(sc)
-	q := `SELECT ` + nodeColumns + ` FROM nodes WHERE id = ? AND ` + accessSQL + ` AND state != 'purged'`
+	q := `SELECT ` + nodeColumns + ` FROM nodes WHERE id = ? AND ` + accessSQL +
+		` AND state != 'purged' AND NOT ` + trashedAncestorSQL("")
 	args := append([]any{id}, accessArgs...)
 	return scanNode(d.QueryRowContext(ctx, q, args...))
 }

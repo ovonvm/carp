@@ -26,6 +26,7 @@ import (
 	storagereg "carp/internal/infra/storage"
 	"carp/internal/infra/storage/local"
 	"carp/internal/platform/apperr"
+	"carp/internal/platform/ctxio"
 	"carp/internal/platform/idgen"
 )
 
@@ -437,7 +438,7 @@ func (s *Service) mergeParts(ctx context.Context, store *local.Store, up domainf
 		if err != nil {
 			return "", 0, apperr.ErrBadRequest.WithReason(apperr.ReasonPartsIncomplete)
 		}
-		n, err := io.CopyBuffer(io.MultiWriter(out, h), in, buf)
+		n, err := io.CopyBuffer(io.MultiWriter(out, h), ctxio.Reader{Ctx: ctx, R: in}, buf)
 		in.Close()
 		if err != nil {
 			return "", 0, apperr.ErrInternal.WithCause(fmt.Errorf("merge: copy part %d: %w", part.PartNo, err))
@@ -465,7 +466,7 @@ func (s *Service) writeTemp(ctx context.Context, path string, body io.Reader, li
 	}
 	h := sha256.New()
 	buf := make([]byte, s.bufSz)
-	n, err := io.CopyBuffer(io.MultiWriter(f, h), io.LimitReader(body, limit+1), buf)
+	n, err := io.CopyBuffer(io.MultiWriter(f, h), ctxio.Reader{Ctx: ctx, R: io.LimitReader(body, limit+1)}, buf)
 	if err != nil {
 		f.Close()
 		_ = os.Remove(path)

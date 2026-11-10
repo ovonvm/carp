@@ -76,8 +76,29 @@ public partial class MainWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        FitToWorkArea();
         _uptimeTimer.Start();
         await BootstrapAsync();
+    }
+
+    /// <summary>固定的 860×540 在高 DPI 小屏上可能超出工作区，先夹进来再显示。</summary>
+    private void FitToWorkArea()
+    {
+        var area = SystemParameters.WorkArea;
+        var maxHeight = Math.Max(MinHeight, area.Height - 24);
+        var maxWidth = Math.Max(MinWidth, area.Width - 24);
+        if (Height > maxHeight)
+        {
+            MaxHeight = maxHeight;
+            Height = maxHeight;
+        }
+        if (Width > maxWidth)
+        {
+            MaxWidth = maxWidth;
+            Width = maxWidth;
+        }
+        Left = area.Left + Math.Max(0, (area.Width - Width) / 2);
+        Top = area.Top + Math.Max(0, (area.Height - Height) / 2);
     }
 
     private async Task BootstrapAsync()
@@ -189,6 +210,10 @@ public partial class MainWindow : Window
             return;
         }
         await MaybeShowInitialAdminAsync();
+        if (!_tray.Registered && !_readOnly)
+        {
+            _core.AddLog("[GUI] 托盘图标未注册，关闭窗口将直接退出服务");
+        }
     }
 
     // ------------------------------------------------------------------ 核心事件
@@ -526,9 +551,20 @@ public partial class MainWindow : Window
     private async Task<bool> TerminateExistingCoreAsync()
     {
         var pid = _core.ReadPidFile();
+        if (pid > 0)
+        {
+            // A stale pid file can point at a recycled PID; only trust it when the
+            // process still looks like Carp and actually owns the port.
+            var listenerPid = await Task.Run(() => SystemProbe.FindListenerPid(_config.Port));
+            var fromFile = SystemProbe.Describe(pid);
+            if (!SystemProbe.LooksLikeCarp(fromFile) || (listenerPid > 0 && listenerPid != pid))
+            {
+                pid = 0;
+            }
+        }
         if (pid <= 0)
         {
-            pid = SystemProbe.FindListenerPid(_config.Port);
+            pid = await Task.Run(() => SystemProbe.FindListenerPid(_config.Port));
         }
         if (pid <= 0)
         {
@@ -876,7 +912,8 @@ public partial class MainWindow : Window
         }
 
         // 关窗口（X）= 收进托盘，服务继续跑；只有托盘菜单「退出」才走下面的停机流程。
-        if (!_exitRequested)
+        // 托盘注册失败时没有入口唤回窗口，所以此时关窗口按“退出”处理。
+        if (!_exitRequested && _tray.Registered)
         {
             HideToTray();
             return;
@@ -1086,13 +1123,27 @@ public partial class MainWindow : Window
 
     private static string NormalizeVersion(string version)
     {
-        var plus = version.IndexOf('+');
+        var v = version.Trim();
+        if (v.Length > 1 && (v[0] == 'v' || v[0] == 'V'))
+        {
+            v = v[1..];
+        }
+        var plus = v.IndexOf('+');
         if (plus >= 0)
         {
-            version = version[..plus];
+            v = v[..plus];
         }
-        var parts = version.Split('.');
-        return string.Join('.', parts.Take(3)).Trim();
+        var dash = v.IndexOf('-');
+        if (dash >= 0)
+        {
+            v = v[..dash];
+        }
+        var parts = v.Split('.', StringSplitOptions.RemoveEmptyEntries).Take(3).ToList();
+        while (parts.Count < 3)
+        {
+            parts.Add("0");
+        }
+        return string.Join('.', parts).Trim();
     }
 
     private static string RandomPassword(int length)
