@@ -53,7 +53,7 @@ carp             # 运维菜单</code></pre>
 <tr><td>数据目录</td><td>默认 <code>/opt/carp/data</code></td></tr>
 <tr><td>配置文件</td><td><code>/opt/carp/carp.env</code></td></tr>
 <tr><td>密码文件</td><td><code>&lt;data&gt;/bootstrap/initial-admin.txt</code>，首次修改密码后自动删除</td></tr>
-<tr><td>服务状态</td><td>systemd 状态和健康检查结果（例如 <code>active（健康检查 OK）</code>）；安装时用了 <code>--no-service</code> 则改为「服务方式」一行，提示未安装 systemd、需手动运行 <code>/usr/local/bin/carp serve</code></td></tr>
+<tr><td>服务状态</td><td>systemd 状态和健康检查结果（例如 <code>active（健康检查 OK）</code>）；安装时用了 <code>--no-service</code> 则改为「服务方式」字段，提示未安装 systemd、需手动运行 <code>/usr/local/bin/carp serve</code>（过长时自动换行）</td></tr>
 </tbody></table>
 <p>信息框下方还会提示首次登录后立即修改密码，并列出下一步：<code>carp doctor</code>、<code>carp</code>（运维菜单）、<code>systemctl status carp</code>。</p>
 <blockquote><p><code>--no-credentials</code> 只隐藏密码本身，信息框的其它字段仍会打印；服务正常启动时密码仍写入上述密码文件。<code>--dry-run</code> 只打印安装计划，不执行安装，也不会出现这个信息框。<code>--no-service</code> 不启动服务，初始密码要等首次手动运行 <code>/usr/local/bin/carp serve</code> 时才生成，信息框会提示稍后查看密码文件。</p></blockquote>
@@ -70,7 +70,7 @@ carp             # 运维菜单</code></pre>
 ║ 密码文件    /opt/carp/data/bootstrap/initial-admin.txt                 ║
 ║ 服务状态    active（健康检查 OK）                                      ║
 ╚════════════════════════════════════════════════════════════════════════╝</code></pre>
-<blockquote><p>边框宽度会按内容自适应，上例只示意字段；实际对齐以终端输出为准（<code>局域网 IP</code> 较长时框会更宽）。</p></blockquote>
+<blockquote><p>边框宽度会按内容自适应，上例只示意字段；实际对齐以终端输出为准（单行超过 76 列时自动换行，例如 <code>局域网 IP</code> 较长或 <code>--no-service</code> 的「服务方式」行）。</p></blockquote>
 <h2 id="42便携方式">4.2 便携方式</h2>
 <pre><code class="language-bash">chmod +x carp
 ./carp serve</code></pre>
